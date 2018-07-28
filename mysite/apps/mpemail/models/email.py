@@ -14,6 +14,8 @@ df_product = pd.read_excel(product_excel)
 keyword_title_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/keyword-title.xlsx')
 df_keyword = pd.read_excel(keyword_title_excel)
 
+company_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/company.xlsx')
+df_company = pd.read_excel(company_excel)
 
 
 class EmailQuerySet(QuerySet):
@@ -114,20 +116,42 @@ class Email(models.Model):
 
         df = pd.read_excel(attachment)
 
+        seller = df_company
 
         product = df_keyword['품목'.decode('utf-8')]
         count = df_keyword['수량'.decode('utf-8')]
 
+        customer = df_keyword['고객성명'.decode('utf-8')]
+        postal = df_keyword['우편번호'.decode('utf-8')]
+        address = df_keyword['주소'.decode('utf-8')]
+        phone = df_keyword['전화번호'.decode('utf-8')]
+        message = df_keyword['배송메시지'.decode('utf-8')]
+
         product_column = None
         count_column = None
 
+        customer_column = None
+        postal_column = None
+        address_column = None
+        phone_column = None
+        message_column = None
 
         order_list = []
         for column in df.columns:
             if column in product.tolist():
                 product_column = column
-            if column in count.tolist():
+            elif column in count.tolist():
                 count_column = column
+            elif column in customer.tolist():
+                customer_column = column
+            elif column in postal.tolist():
+                postal_column = column
+            elif column in address.tolist():
+                address_column = column
+            elif column in phone.tolist():
+                phone_column = column
+            elif column in message.tolist():
+                message_column = column
 
         try:
             if product_column is None:
@@ -136,6 +160,21 @@ class Email(models.Model):
             if count_column is None:
                 error = '수량 없음'
                 raise ValueError
+            if customer_column is None:
+                error = '고객성명 없음'
+                raise ValueError
+            if postal_column is None:
+                error = '우편번호 없음'
+                raise ValueError
+            if address_column is None:
+                error = '주소 없음'
+                raise ValueError
+            if phone_column is None:
+                error = '전화번호 없음'
+                raise ValueError
+            if message_column is None:
+                error = '배송메시지 없음'
+                raise ValueError
 
             for index, row in df.iterrows():
                 products = row[product_column].split('//')
@@ -143,6 +182,11 @@ class Email(models.Model):
                 count_sum = 0
 
                 order_dict = {
+                    '고객성명': row[customer_column],
+                    '우편번호': row[postal_column],
+                    '주소': row[address_column],
+                    '전화번호': row[phone_column],
+                    '배송메시지': row[message_column],
                 }
                 for product in products:
                     productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
@@ -163,13 +207,18 @@ class Email(models.Model):
 
                     order_dict.setdefault('품목코드', [])
                     order_dict['품목코드'].append(product_code)
-                    order_dict['수량'] = count
 
                     product = df_product.loc[df_product['품목코드'.decode('utf-8')]==product_code]
                     product_name = product.iloc[0]['품목명'.decode('utf-8')]
                     order_dict.setdefault('품목명', [])
                     order_dict['품목명'].append(product_name)
                     order_list.append(order_dict)
+
+                if count and count != count_sum:
+                    # 수량 column 과 sum 이 다름
+                    order_list.pop()
+                    raise ValueError
+
 
         except ValueError:
             print error
