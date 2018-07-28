@@ -109,6 +109,7 @@ class Email(models.Model):
 
     def process_order(self):
 
+        error = None
         email = self
         process_order_fail_reason = None
 
@@ -116,10 +117,17 @@ class Email(models.Model):
 
         df = pd.read_excel(attachment)
 
-        seller = df_company
+        df_seller = df_company.loc[df_company['email'] == email]
+        if df_seller.empty:
+            error = '판매자 못찾음'
+            raise ValueError
+        seller_dict = df_seller.iloc[0].to_dict()
 
         product = df_keyword['품목'.decode('utf-8')]
         count = df_keyword['수량'.decode('utf-8')]
+
+        product_column = None
+        count_column = None
 
         customer = df_keyword['고객성명'.decode('utf-8')]
         postal = df_keyword['우편번호'.decode('utf-8')]
@@ -127,14 +135,19 @@ class Email(models.Model):
         phone = df_keyword['전화번호'.decode('utf-8')]
         message = df_keyword['배송메시지'.decode('utf-8')]
 
-        product_column = None
-        count_column = None
-
         customer_column = None
         postal_column = None
         address_column = None
         phone_column = None
         message_column = None
+
+        sender = df_keyword['보내는이'.decode('utf-8')]
+        sender_phone = df_keyword['보내는이 전화번호'.decode('utf-8')]
+        sender_cellphone = df_keyword['보내는이 핸드폰'.decode('utf-8')]
+
+        sender_column = None
+        sender_phone_column = None
+        sender_cellphone_column = None
 
         order_list = []
         for column in df.columns:
@@ -151,6 +164,12 @@ class Email(models.Model):
             elif column in phone.tolist():
                 phone_column = column
             elif column in message.tolist():
+                message_column = column
+            elif column in sender.tolist():
+                sender_column = column
+            elif column in sender_phone.tolist():
+                message_column = column
+            elif column in sender_cellphone.tolist():
                 message_column = column
 
         try:
@@ -181,12 +200,16 @@ class Email(models.Model):
                 count = row[count_column]
                 count_sum = 0
 
+
+
                 order_dict = {
                     '고객성명': row[customer_column],
                     '우편번호': row[postal_column],
                     '주소': row[address_column],
                     '전화번호': row[phone_column],
                     '배송메시지': row[message_column],
+
+                    '보내는분 성명': sender
                 }
                 for product in products:
                     productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
