@@ -1,0 +1,29 @@
+import sys
+sys.path.insert(0, "/path/to/your/package_or_module")
+
+pdb
+python ./mp
+> wait
+
+
+Suggestion: do not download *all* historical email #1098
+https://github.com/mailpile/Mailpile/issues/1098
+
+
+> /home/eugenekim/outsource/mail/Mailpile/mailpile/plugins/search.py(504)__init__()
+-> self.add_msg_info(b36(idx_pos), msg_info,
+(Pdb) msg_info
+[u'12', u'00010dbc82d2a22,00010dbc82d2a2', u'Rpmd03jB99sEK5iuIBYVB+sHoDg', u'PBZZM4', u'\uc54c\uc564\uc1fc\ud551  <nprimecorp3@gmail.com>', u'6', u'', u'F', u'\uc790\ub3d9\uc8fc\ubb38-\ubc1c\uc8fc', u'{"snippet": "=?UTF-8?B?7JWM7JWk7Ie87ZWRIO2VnOyCvOyduCA264WE6re87Iqk7YuxIDE4MDcxNy54bHN4?=", "parts": ["2::T", "1b::H", "2508:ms/xx:=?UTF-8?B?7JWM7JWk7Ie87ZWRIO2VnOyCvOyduCA264WE6re87Iqk7YuxIDE4MDcxNy54bHN4?="]}', u'b,d,i,13,1c,1d', u'', u'12']
+
+SearchResults
+self['search_terms'] = [u'in:inbox']
+
+
+
+links
+
+[[file:~/outsource/mail/Mailpile/mailpile/plugins/search.py::num%20%3D%20num%20or%20session.config.prefs.num_results][result pagination]]
+
+[[file:~/outsource/mail/Mailpile/mailpile/plugins/search.py::self._emails.append(Email(idx,%20emid_idx))][create Emails data]]
+
+[[file:~/outsource/mail/Mailpile/mailpile/search.py::def%20set_msg_at_idx_pos(self,%20msg_idx,%20msg_info,%20original_line%3DNone):][set_msg_at_idx_pos load index]]

@@ -1,0 +1,14 @@
+from django.db import models
+
+
+class Email(models.Model):
+
+    msg_id = models.CharField(max_length=128, blank=True, db_index=True)
+    title = models.CharField(max_length=2048, blank=True, db_index=True)
+    sender = models.CharField(max_length=128, blank=True, db_index=True)
+
+    has_attachment = models.NullBooleanField(default=None, blank=True)
+
+
+    data = JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -1,0 +1,18 @@
+* TODO inbox 에 있는 메일 목록을 가져와서 db 에 쌓는다
+  - [X] inbox 로 가져온 목록을 django server 에 보낸다
+  - [X] django 는 mail id 로 get or create 한다
+  - [-] mail 에 대해 보내야할 목록
+    - [X] mail id
+    - [X] title
+    - [X] sender
+    - [ ] has attachment
+
+
+* TODO 메일의 상태 관리
+  - [ ] 본문 내용을 가져왔는지
+  - [ ] 처리해야 할 메일인지 ..
+    - [ ] 메일 제목 에 특정 단어
+    - [ ] 메일 주소
+    - [ ] 엑셀 파일 있는지
+    - [ ] 제목 본문에 특정 단어 포함
+  - [ ] 주문 처리, 송장번호 입력, 회신 여부

@@ -1,0 +1,34 @@
+from rest_framework.response import Response
+from rest_framework import viewsets
+from rest_framework.decorators import detail_route, list_route
+from rest_framework.response import Response
+
+from email.rest.serializers.email import EmailSerializer
+
+
+class EmailViewSet(viewsets.ModelViewSet):
+
+    queryset = Email.objects.all()
+
+    serializer_class = EmailSerializer
+
+    @detail_route(methods=['post', 'put', 'patch'])
+    def get_or_create_list(self, request, *args, **kwargs):
+
+        data_all = request.data
+
+        for k, v in data_all.items():
+
+            msg_id = v['id']
+
+            data = {
+                'title': v['subject'],
+                'sender': v['address'],
+            }
+
+            Email.objects.get_or_create(
+                msg_id=msg_id,
+                defaults=data
+            )
+
+        return Response([])

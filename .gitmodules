@@ -1,0 +1,3 @@
+[submodule "Mailpile"]
+	path = Mailpile
+	url = https://github.com/littlehome-eugene/Mailpile.git
