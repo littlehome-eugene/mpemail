@@ -6,6 +6,7 @@ import urlparse
 from django.conf import settings
 from django.db.models.query import QuerySet
 import pandas as pd
+import uuid
 
 
 product_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/product.xlsx')
@@ -168,9 +169,9 @@ class Email(models.Model):
             elif column in sender.tolist():
                 sender_column = column
             elif column in sender_phone.tolist():
-                message_column = column
+                sender_phone_column = column
             elif column in sender_cellphone.tolist():
-                message_column = column
+                sender_cellphone_column = column
 
         try:
             if product_column is None:
@@ -197,19 +198,42 @@ class Email(models.Model):
 
             for index, row in df.iterrows():
                 products = row[product_column].split('//')
-                count = row[count_column]
+                count_by_countcolumn = row[count_column]
                 count_sum = 0
 
+                if sender_column:
+                    sender = row[sender_column]
+                else:
+                    sender = seller_dict['거래처명']
 
+                if sender_phone_column:
+                    sender_phone = row[sender_phone_column]
+                else:
+                    sender_phone = seller_dict['전화']
+
+                if sender_cellphone_column:
+                    sender_cellphone = row[sender_cellphone_column]
+                else:
+                    sender_cellphone = seller_dict['핸드폰']
 
                 order_dict = {
                     '고객성명': row[customer_column],
                     '우편번호': row[postal_column],
-                    '주소': row[address_column],
+                    '주소': row[address_column].strip(),
                     '전화번호': row[phone_column],
                     '배송메시지': row[message_column],
+                    '핸드폰번호': '',  # todo
 
-                    '보내는분 성명': sender
+                    '보내는분 성명': sender,
+                    '보내는분 전화': sender_phone,
+                    '보내는분 핸드폰': sender_cellphone,
+                    '보내는분 우편본호': seller_dict['우편번호'],
+                    '보내는분 주소': seller_dict['주소'],
+
+                    '택배박스 갯수': '',
+                    '운임Type': '',
+                    '주문번호': uuid.uuid4(),
+
                 }
                 for product in products:
                     productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
@@ -233,23 +257,91 @@ class Email(models.Model):
 
                     product = df_product.loc[df_product['품목코드'.decode('utf-8')]==product_code]
                     product_name = product.iloc[0]['품목명'.decode('utf-8')]
-                    order_dict.setdefault('품목명', [])
-                    order_dict['품목명'].append(product_name)
+                    order_dict.setdefault('품목', [])
+                    order_dict['품목'].append(product_name)
                     order_list.append(order_dict)
 
-                if count and count != count_sum:
+                    order_dict.setdefault('수량', [])
+                    order_dict['수량'].append(count)
+                    order_list.append(order_dict)
+
+
+                if count_by_countcolumn and count_by_countcolumn != count_sum:
                     # 수량 column 과 sum 이 다름
                     order_list.pop()
                     raise ValueError
-
 
         except ValueError:
             print error
             pass
 
+        # place same address rows together
+        df_delivery = pd.DataFrame(order_list)
 
-        df_result = pd.DataFrame(order_list)
+        df_delivery = sort_by_column(df_delivery, '주소')
+
+        address_prev = None
+        index_prev = None
+        for index, row in df_delivery.iterrows():
+            if address_prev and row['주소'] == address_prev:
+                df_delivery[index_prev, '품목'].append(
+                     df_delivery[index, '품목']
+                )
+                df_delivery[index_prev, '수량'].append(
+                     df_delivery[index, '수량']
+                )
+                df_delivery.drop(index, inplace=True)
+            else:
+                address_prev = row['주소']
+                index_prev = index
 
 
+        df_delivery = sort_by_column(df_delivery, '고객성명')
+        df_delivery = sort_by_column(df_delivery, '전화번호')
+        df_delivery = sort_by_column(df_delivery, '핸드폰번호')
+
+        index_prev = None
+        for index, row in df_delivery.iterrows():
+            if index_prev:
+                customer_prev = df_delivery[index_prev, '고객성명']
+                phone_prev = df_delivery[index_prev, '전화번호']
+                cellphone_prev = df_delivery[index_prev, '핸드폰번호']
+                if (row['고객성명'] == customer_prev or
+                    row['전화번호'] == phone_prev or
+                    row['핸드폰번호'] == cellphone_prev):
+
+                    df_delivery.loc[index, 'maybe_same_customer'] = True
+                    df_delivery.loc[index_prev, 'maybe_same_customer'] = True
+                    # yellow
+                    pass
+            else:
+                index_prev = index
+
+        df_delivery.loc[df_delivery.maybe_same_customer==True, '택배박스 갯수'] = 0
+        df_delivery.loc[df_delivery.maybe_same_customer==True, '운임Type'] = '-'
+        df_delivery.style.apply(row_style, axis=1)
         import pdb; pdb.set_trace()
         pass
+
+
+def sort_by_column(df, column_name):
+
+    ord_dict = {}
+    ordering_list = []
+
+    for idx, value in enumerate(df[column_name]):
+        if value not in ord_dict:
+            ord_dict[value] = len(ord_dict)
+            ordering_list.append((ord_dict[value], idx))
+
+    df['ord'] = ordering_list
+    df.sort_values(by='ord')
+
+    return df
+
+
+def row_style(row):
+    if row.maybe_same_customer:
+        return pd.Series('background-color: yellow', row.index)
+    else:
+        return pd.Series('', row.index)
