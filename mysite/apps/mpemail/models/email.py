@@ -2,7 +2,8 @@
 import os
 import re
 from django.db import models
-import urlparse
+
+import urllib.parse
 from django.conf import settings
 from django.db.models.query import QuerySet
 import pandas as pd
@@ -104,7 +105,7 @@ class Email(models.Model):
             count=email.attachment_count
         )
 
-        url = urlparse.urljoin(settings.MAILPILE_URL, url)
+        url = parse.urljoin(settings.MAILPILE_URL, url)
 
         return url
 
@@ -118,23 +119,28 @@ class Email(models.Model):
 
         df = pd.read_excel(attachment)
 
-        df_seller = df_company.loc[df_company['email'] == email]
-        if df_seller.empty:
-            error = '판매자 못찾음'
-            raise ValueError
-        seller_dict = df_seller.iloc[0].to_dict()
+        import pdb; pdb.set_trace()
+        df_seller = df_company.loc[df_company['email'] == email.sender]
+        try:
+            if df_seller.empty:
+                error = '판매자 못찾음'
+                raise ValueError
+            seller_dict = df_seller.iloc[0].to_dict()
+        except ValueError:
+            print(error)
+            return
 
-        product = df_keyword['품목'.decode('utf-8')]
-        count = df_keyword['수량'.decode('utf-8')]
+        product = df_keyword['품목']
+        count = df_keyword['수량']
 
         product_column = None
         count_column = None
 
-        customer = df_keyword['고객성명'.decode('utf-8')]
-        postal = df_keyword['우편번호'.decode('utf-8')]
-        address = df_keyword['주소'.decode('utf-8')]
-        phone = df_keyword['전화번호'.decode('utf-8')]
-        message = df_keyword['배송메시지'.decode('utf-8')]
+        customer = df_keyword['고객성명']
+        postal = df_keyword['우편번호']
+        address = df_keyword['주소']
+        phone = df_keyword['전화번호']
+        message = df_keyword['배송메시지']
 
         customer_column = None
         postal_column = None
@@ -142,9 +148,9 @@ class Email(models.Model):
         phone_column = None
         message_column = None
 
-        sender = df_keyword['보내는이'.decode('utf-8')]
-        sender_phone = df_keyword['보내는이 전화번호'.decode('utf-8')]
-        sender_cellphone = df_keyword['보내는이 핸드폰'.decode('utf-8')]
+        sender = df_keyword['보내는이']
+        sender_phone = df_keyword['보내는이 전화번호']
+        sender_cellphone = df_keyword['보내는이 핸드폰']
 
         sender_column = None
         sender_phone_column = None
@@ -255,8 +261,8 @@ class Email(models.Model):
                     order_dict.setdefault('품목코드', [])
                     order_dict['품목코드'].append(product_code)
 
-                    product = df_product.loc[df_product['품목코드'.decode('utf-8')]==product_code]
-                    product_name = product.iloc[0]['품목명'.decode('utf-8')]
+                    product = df_product.loc[df_product['품목코드']==product_code]
+                    product_name = product.iloc[0]['품목명']
                     order_dict.setdefault('품목', [])
                     order_dict['품목'].append(product_name)
                     order_list.append(order_dict)
@@ -272,35 +278,40 @@ class Email(models.Model):
                     raise ValueError
 
         except ValueError:
-            print error
-            pass
+            print(error)
+            return
 
         # place same address rows together
+
+        import pdb; pdb.set_trace()
         df_delivery = pd.DataFrame(order_list)
 
         df_delivery = sort_by_column(df_delivery, '주소')
 
         address_prev = None
         index_prev = None
+        df_delivery['to_be_deleted'] = False
         for index, row in df_delivery.iterrows():
             if address_prev and row['주소'] == address_prev:
-                df_delivery[index_prev, '품목'].append(
-                     df_delivery[index, '품목']
+                df_delivery.loc[index_prev, '품목'].append(
+                     df_delivery.loc[index, '품목']
                 )
-                df_delivery[index_prev, '수량'].append(
-                     df_delivery[index, '수량']
+                df_delivery.loc[index_prev, '수량'].append(
+                     df_delivery.loc[index, '수량']
                 )
-                df_delivery.drop(index, inplace=True)
+                df_delivery.loc[index, 'to_be_deleted'] = True
             else:
                 address_prev = row['주소']
                 index_prev = index
 
+        df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
         df_delivery = sort_by_column(df_delivery, '고객성명')
         df_delivery = sort_by_column(df_delivery, '전화번호')
         df_delivery = sort_by_column(df_delivery, '핸드폰번호')
 
         index_prev = None
+        df_delivery['maybe_same_customer'] = False
         for index, row in df_delivery.iterrows():
             if index_prev:
                 customer_prev = df_delivery[index_prev, '고객성명']
@@ -317,8 +328,8 @@ class Email(models.Model):
             else:
                 index_prev = index
 
-        df_delivery.loc[df_delivery.maybe_same_customer==True, '택배박스 갯수'] = 0
-        df_delivery.loc[df_delivery.maybe_same_customer==True, '운임Type'] = '-'
+        df_delivery.loc[df_delivery['maybe_same_customer']==True, '택배박스 갯수'] = 0
+        df_delivery.loc[df_delivery['maybe_same_customer']==True, '운임Type'] = '-'
         df_delivery.style.apply(row_style, axis=1)
         import pdb; pdb.set_trace()
         pass
@@ -332,7 +343,7 @@ def sort_by_column(df, column_name):
     for idx, value in enumerate(df[column_name]):
         if value not in ord_dict:
             ord_dict[value] = len(ord_dict)
-            ordering_list.append((ord_dict[value], idx))
+        ordering_list.append((ord_dict[value], idx))
 
     df['ord'] = ordering_list
     df.sort_values(by='ord')
