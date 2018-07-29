@@ -260,14 +260,18 @@ class Email(models.Model):
 
                     order_dict.setdefault('품목코드', [])
                     order_dict['품목코드'].append(product_code)
+                    order_dict['품목코드_flat'] = product_code
 
                     product = df_product.loc[df_product['품목코드']==product_code]
                     product_name = product.iloc[0]['품목명']
                     order_dict.setdefault('품목', [])
                     order_dict['품목'].append(product_name)
+                    order_dict['품목_flat'] = product_name
 
                     order_dict.setdefault('수량', [])
                     order_dict['수량'].append(count)
+                    order_dict['수량_flat'] = count
+
                     order_list.append(order_dict)
 
 
@@ -283,6 +287,39 @@ class Email(models.Model):
         # place same address rows together
 
         df_delivery = pd.DataFrame(order_list)
+
+        import pdb; pdb.set_trace()
+        df_order = df_delivery[['수량_flat', '품목코드_flat']].copy()
+
+        df_order = df_order.rename(columns={
+            '수량_flat':'수량',
+            '품목코드_flat':'품목코드',
+        })
+
+        df_order.groupby('품목코드').agg({'수량':'sum'})
+
+        df_order['품목'] = ''
+        df_order['거래처코드'] = seller_dict['거래처코드']
+        df_order['거래처명'] = seller_dict['거래처명']
+        df_order['담당자'] = ''
+        df_order['출하창고'] = 100
+        df_order['거래유형'] = seller_dict['거래유형코드']
+        df_order['통화'] = ''
+        df_order['환율'] = ''
+        df_order['전잔액'] = ''
+        df_order['현잔액'] = ''
+        df_order['품목명'] = ''
+        df_order['규격'] = product.iloc[0]['규격']
+        df_order['단가(vat포함)'] = ''  # todo
+        df_order['외화금액'] = ''
+        df_order['공급가액'] = ''  # todo
+        df_order['부가세'] = ''  # todo
+
+        df_order['적요'] = attachment.name.split('/')[-1]
+        df_order['부대비용'] = ''
+        df_order['생상전표생성'] = ''
+        df_order['Ecount'] = 'Ecount'
+
 
         df_delivery = sort_by_column(df_delivery, '주소')
 
