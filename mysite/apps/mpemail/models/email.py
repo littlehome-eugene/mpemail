@@ -265,7 +265,6 @@ class Email(models.Model):
                     product_name = product.iloc[0]['품목명']
                     order_dict.setdefault('품목', [])
                     order_dict['품목'].append(product_name)
-                    order_list.append(order_dict)
 
                     order_dict.setdefault('수량', [])
                     order_dict['수량'].append(count)
@@ -283,7 +282,6 @@ class Email(models.Model):
 
         # place same address rows together
 
-        import pdb; pdb.set_trace()
         df_delivery = pd.DataFrame(order_list)
 
         df_delivery = sort_by_column(df_delivery, '주소')
@@ -293,10 +291,10 @@ class Email(models.Model):
         df_delivery['to_be_deleted'] = False
         for index, row in df_delivery.iterrows():
             if address_prev and row['주소'] == address_prev:
-                df_delivery.loc[index_prev, '품목'].append(
+                df_delivery.loc[index_prev, '품목'].extend(
                      df_delivery.loc[index, '품목']
                 )
-                df_delivery.loc[index_prev, '수량'].append(
+                df_delivery.loc[index_prev, '수량'].extend(
                      df_delivery.loc[index, '수량']
                 )
                 df_delivery.loc[index, 'to_be_deleted'] = True
