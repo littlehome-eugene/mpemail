@@ -334,6 +334,10 @@ class Email(models.Model):
         import pdb; pdb.set_trace()
         pass
 
+    def __str__(self):
+
+        return u'{} {}'.format(self.title, self.sender)
+
 
 def sort_by_column(df, column_name):
 
