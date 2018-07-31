@@ -23,7 +23,7 @@ class EmailViewSet(viewsets.ModelViewSet):
         metadata = data_all.get('metadata')
         messages = data_all.get('messages')
 
-        for k, v in metadata.iteritems():
+        for k, v in metadata.items():
 
             msg_id = v['id']
             msg_mid = v['mid']
@@ -37,6 +37,7 @@ class EmailViewSet(viewsets.ModelViewSet):
 
             if attachments:
                 for attachment in attachments:
+                    print(attachment.get('filename'), attachment.get('mimetype'))
                     if attachment.get('mimetype') in Email.ALLOWED_EXCEL_MIME_TYPES:
                         excel_attachment_count += 1
                         attachment_count = attachment.get('count')

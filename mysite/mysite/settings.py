@@ -89,7 +89,7 @@ DATABASES = {
     # 'default': {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    # },
+    # }
 
     'default': {
         # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
@@ -150,3 +150,17 @@ CELERY_RESULT_BACKEND = 'django-db'
 CORS_ORIGIN_ALLOW_ALL = True
 
 ALLOWED_HOSTS = ['*']
+
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+MEDIA_URL = "media/"
+
+urlpatterns = [
+    # ... the rest of your URLconf goes here ...
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+if DEBUG:
+    CELERY_TASK_ALWAYS_EAGER = True
