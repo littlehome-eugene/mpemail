@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 import pandas as pd
 import uuid
+from pandas import ExcelWriter
 
 
 product_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/product.xlsx')
@@ -117,9 +118,9 @@ class Email(models.Model):
 
         attachment = email.attachment
 
-        df = pd.read_excel(attachment)
+        print(attachment.name)
+        df = pd.read_excel(attachment, dtype=str)
 
-        import pdb; pdb.set_trace()
         df_seller = df_company.loc[df_company['email'] == email.sender]
         try:
             if df_seller.empty:
@@ -204,7 +205,7 @@ class Email(models.Model):
 
             for index, row in df.iterrows():
                 products = row[product_column].split('//')
-                count_by_countcolumn = row[count_column]
+                count_by_countcolumn = int(row[count_column])
                 count_sum = 0
 
                 if sender_column:
@@ -222,23 +223,24 @@ class Email(models.Model):
                 else:
                     sender_cellphone = seller_dict['핸드폰']
 
+
                 order_dict = {
                     '고객성명': row[customer_column],
                     '우편번호': row[postal_column],
                     '주소': row[address_column].strip(),
-                    '전화번호': row[phone_column],
+                    '전화번호': str(row[phone_column] or ""),
                     '배송메시지': row[message_column],
                     '핸드폰번호': '',  # todo
 
                     '보내는분 성명': sender,
-                    '보내는분 전화': sender_phone,
-                    '보내는분 핸드폰': sender_cellphone,
+                    '보내는분 전화': str(sender_phone or ""),
+                    '보내는분 핸드폰': str(sender_cellphone or ""),
                     '보내는분 우편본호': seller_dict['우편번호'],
                     '보내는분 주소': seller_dict['주소'],
 
                     '택배박스 갯수': '',
                     '운임Type': '',
-                    '주문번호': uuid.uuid4(),
+                    '주문번호': str(uuid.uuid4()),
 
                 }
                 for product in products:
@@ -252,7 +254,7 @@ class Email(models.Model):
                     if len(productcode_count_pairs) == 1:
 
                         product_code = productcode_count_pairs[0][0]
-                        count = productcode_count_pairs[0][1] or 1
+                        count = int(productcode_count_pairs[0][1]) or 1
                         count_sum += count
                     else:
                         error = '품목코드 파싱 실패'
@@ -288,7 +290,6 @@ class Email(models.Model):
 
         df_delivery = pd.DataFrame(order_list)
 
-        import pdb; pdb.set_trace()
         df_order = df_delivery[['수량_flat', '품목코드_flat']].copy()
 
         df_order = df_order.rename(columns={
@@ -349,9 +350,9 @@ class Email(models.Model):
         df_delivery['maybe_same_customer'] = False
         for index, row in df_delivery.iterrows():
             if index_prev:
-                customer_prev = df_delivery[index_prev, '고객성명']
-                phone_prev = df_delivery[index_prev, '전화번호']
-                cellphone_prev = df_delivery[index_prev, '핸드폰번호']
+                customer_prev = df_delivery.loc[index_prev, '고객성명']
+                phone_prev = df_delivery.loc[index_prev, '전화번호']
+                cellphone_prev = df_delivery.loc[index_prev, '핸드폰번호']
                 if (row['고객성명'] == customer_prev or
                     row['전화번호'] == phone_prev or
                     row['핸드폰번호'] == cellphone_prev):
@@ -366,8 +367,10 @@ class Email(models.Model):
         df_delivery.loc[df_delivery['maybe_same_customer']==True, '택배박스 갯수'] = 0
         df_delivery.loc[df_delivery['maybe_same_customer']==True, '운임Type'] = '-'
         df_delivery.style.apply(row_style, axis=1)
-        import pdb; pdb.set_trace()
-        pass
+
+
+        return df_delivery, df_order
+
 
     def __str__(self):
 
