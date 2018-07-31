@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete, pre_save
 
 from mpemail.models.email import Email
-
+from mpemail.tasks.email import download_attachment
 
 
 @receiver(post_save, sender=Email)
@@ -17,7 +17,8 @@ def fetch_attachments(sender, instance, created,  **kwargs):
     if email.attachment:
         return
 
-    download_attachment.delay(email_id)
+    # download_attachment.delay(email.id)
+    download_attachment(email.id)
 
 
 @receiver(pre_save, sender=Email)

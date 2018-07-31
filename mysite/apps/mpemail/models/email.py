@@ -3,7 +3,7 @@ import os
 import re
 from django.db import models
 
-import urllib.parse
+from urllib.parse import urljoin
 from django.conf import settings
 from django.db.models.query import QuerySet
 import pandas as pd
@@ -43,7 +43,8 @@ class EmailManager(models.Manager):
 class Email(models.Model):
 
     ALLOWED_EXCEL_MIME_TYPES = [
-        'application/vnd.ms-excel'
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     ]
 
     AUTO_STATUS = [
@@ -106,7 +107,7 @@ class Email(models.Model):
             count=email.attachment_count
         )
 
-        url = parse.urljoin(settings.MAILPILE_URL, url)
+        url = urljoin(settings.MAILPILE_URL, url)
 
         return url
 

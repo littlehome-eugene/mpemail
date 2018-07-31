@@ -4,6 +4,8 @@ import random
 import tempfile
 
 from django.core import files
+from mpemail.models.email import Email
+from urllib.parse import unquote
 
 import re
 
@@ -39,7 +41,7 @@ def download(url):
     d = request.headers['content-disposition']
     m = re.search("filename\*=[^']+''(.+)", d)
     if m:
-        filename = m.groups()[0]
+        filename = unquote(m.groups()[0])
     else:
         # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
         filename = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
@@ -56,4 +58,5 @@ def download_attachment(email_id):
 
     filename, lf = download(url)
 
-    email.attachment.save(file_name, files.File(lf))
+    print(filename)
+    email.attachment.save(filename, files.File(lf))
