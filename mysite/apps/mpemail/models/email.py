@@ -118,7 +118,6 @@ class Email(models.Model):
 
         attachment = email.attachment
 
-        print(attachment.name)
         df = pd.read_excel(attachment, dtype=str)
 
         df_seller = df_company.loc[df_company['email'] == email.sender]
