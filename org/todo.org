@@ -1,10 +1,16 @@
+
+
 * TODO logistics 정리
+  - [X] elligible
+    - [X] 등록된 메일 주소로부터 온 메일만 주문 처리 : company.xlsx 의 '자동화 여부' 항목에 저장된 값 사용
+    - [X] 메일 제목에서 처음 글자 시작이 AAA 인 메일만 주문 처리 (예: 자동-) : include-title.txt 에 저장된 값 사용
+    - [X]  - 메일 제목 또는 본문에 특정 단어가 포함된 경우는 주문 처리 안 함 (예: CS, 반품) : exclude-keyword.txt 에 저장된 값 사용
   - [ ] output 폴더 위치 mpemail/output
   - [X] 여러 email 을 합쳐서 하나로 저장
   - [X] 전화번호가 숫자로 나옴
-  - [ ] 품목이 list 형태임..
-  - [ ] Not all names specified in 'columns' are found; this will raise a KeyError in the future
-  - [ ] 2A 요구사항 바뀐것 적용
+  - [X] 품목이 list 형태임..
+  - [X] Not all names specified in 'columns' are found; this will raise a KeyError in the future
+  - [X] 2A 요구사항 바뀐것 적용
   - [ ] order 는 판매자별 품목별로 합쳐서 저장
 
 * TODO 메일의 상태 관리

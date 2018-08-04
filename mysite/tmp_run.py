@@ -75,8 +75,8 @@ columns_order = [
 
 emails = Email.objects.eligible_for_order()
 
-df_delivery = pd.DataFrame()
-df_order = pd.DataFrame()
+df_delivery = pd.DataFrame(columns=columns_delivery)
+df_order = pd.DataFrame(columns=columns_order)
 for email in emails:
     result = email.process_order()
     if result:
@@ -88,7 +88,9 @@ for email in emails:
     df_order = pd.concat([df_order, df_order_1], axis=0)
 
 
-writer = ExcelWriter('logistics.xlsx')
+writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'))
+
+import pdb; pdb.set_trace()
 df_delivery.to_excel(
     writer,
     columns=columns_delivery
@@ -96,7 +98,7 @@ df_delivery.to_excel(
 writer.save()
 
 
-writer = ExcelWriter('order.xlsx')
+writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
 df_delivery.to_excel(
     writer,
     columns=columns_order

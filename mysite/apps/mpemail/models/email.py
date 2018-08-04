@@ -20,6 +20,22 @@ df_keyword = pd.read_excel(keyword_title_excel)
 company_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/company.xlsx')
 df_company = pd.read_excel(company_excel)
 
+include_title_path = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/include-title.txt')
+
+import codecs
+with codecs.open(include_title_path,'r', encoding='EUC-KR') as f:
+    include_titles = f.readlines()
+
+include_titles = [x.strip() for x in include_titles]
+
+
+exclude_keyword_path = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/exclude-keyword.txt')
+
+with codecs.open(exclude_keyword_path,'r', encoding='EUC-KR') as f:
+    exclude_keywords = f.readlines()
+
+exclude_keywords = [x.strip() for x in exclude_keywords]
+
 
 class EmailQuerySet(QuerySet):
 
@@ -96,6 +112,22 @@ class Email(models.Model):
         if email.excel_attachment_count != 1:
             return False
 
+        df_seller = df_company.loc[df_company['email'] == email.sender]
+        if df_seller.empty:
+            return False
+
+        for i, title in enumerate(include_titles):
+            if email.title.startswith(title):
+                break
+        if i == len(include_titles):
+            return False
+
+        for i, keyword in enumerate(exclude_keywords):
+            if email.body_text.contains(keyword):
+                break
+        if i == len(exclude_keywords):
+            return False
+
         return True
 
     def attachment_download_url(self):
@@ -120,6 +152,7 @@ class Email(models.Model):
         attachment = email.attachment
 
         df = pd.read_excel(attachment, dtype=str)
+        df.columns = df.columns.str.strip()
 
         df_seller = df_company.loc[df_company['email'] == email.sender]
         try:
@@ -128,7 +161,7 @@ class Email(models.Model):
                 raise ValueError
             seller_dict = df_seller.iloc[0].to_dict()
         except ValueError:
-            print(error)
+            print(error, email.title)
             return
 
         product = df_keyword['품목']
@@ -140,18 +173,22 @@ class Email(models.Model):
         customer = df_keyword['고객성명']
         postal = df_keyword['우편번호']
         address = df_keyword['주소']
+        address_detail = df_keyword['상세주소']
         phone = df_keyword['전화번호']
         message = df_keyword['배송메시지']
+        cellphone = df_keyword['핸드폰']
 
         customer_column = None
         postal_column = None
         address_column = None
+        address_detail_column = None
         phone_column = None
         message_column = None
+        cellphone_column = None
 
         sender = df_keyword['보내는이']
-        sender_phone = df_keyword['보내는이 전화번호']
-        sender_cellphone = df_keyword['보내는이 핸드폰']
+        sender_phone = df_keyword['보내는이전화번호']
+        sender_cellphone = df_keyword['보내는이핸드폰']
 
         sender_column = None
         sender_phone_column = None
@@ -169,6 +206,8 @@ class Email(models.Model):
                 postal_column = column
             elif column in address.tolist():
                 address_column = column
+            elif column in address_detail.tolist():
+                address_detail_column = column
             elif column in phone.tolist():
                 phone_column = column
             elif column in message.tolist():
@@ -179,19 +218,15 @@ class Email(models.Model):
                 sender_phone_column = column
             elif column in sender_cellphone.tolist():
                 sender_cellphone_column = column
+            elif column in cellphone.tolist():
+                cellphone_column = column
 
         try:
             if product_column is None:
                 error = '품목 없음'
                 raise ValueError
-            if count_column is None:
-                error = '수량 없음'
-                raise ValueError
             if customer_column is None:
                 error = '고객성명 없음'
-                raise ValueError
-            if postal_column is None:
-                error = '우편번호 없음'
                 raise ValueError
             if address_column is None:
                 error = '주소 없음'
@@ -199,13 +234,12 @@ class Email(models.Model):
             if phone_column is None:
                 error = '전화번호 없음'
                 raise ValueError
-            if message_column is None:
-                error = '배송메시지 없음'
-                raise ValueError
 
             for index, row in df.iterrows():
                 products = row[product_column].split('//')
-                count_by_countcolumn = int(row[count_column])
+                count_by_countcolumn = row.get(count_column) or None
+                if count_by_countcolumn is not None:
+                    count_by_countcolumn = int(count_by_countcolumn)
                 count_sum = 0
 
                 if sender_column:
@@ -226,11 +260,14 @@ class Email(models.Model):
 
                 order_dict = {
                     '고객성명': row[customer_column],
-                    '우편번호': row[postal_column],
-                    '주소': row[address_column].strip(),
+                    '우편번호': row.get(postal_column),
+                    '주소': ' '.join([
+                        xstr(row.get(address_column)),
+                        xstr(row.get(address_detail_column)),
+                    ]),
                     '전화번호': str(row[phone_column] or ""),
-                    '배송메시지': row[message_column],
-                    '핸드폰번호': '',  # todo
+                    '배송메시지': list(row.get(message_column) or ''),
+                    '핸드폰번호': str(row.get(cellphone_column) or ""),
 
                     '보내는분 성명': sender,
                     '보내는분 전화': str(sender_phone or ""),
@@ -254,7 +291,8 @@ class Email(models.Model):
                     if len(productcode_count_pairs) == 1:
 
                         product_code = productcode_count_pairs[0][0]
-                        count = int(productcode_count_pairs[0][1]) or 1
+                        count = productcode_count_pairs[0][1] or 1
+                        count = int(count)
                         count_sum += count
                     else:
                         error = '품목코드 파싱 실패'
@@ -278,12 +316,14 @@ class Email(models.Model):
 
 
                 if count_by_countcolumn and count_by_countcolumn != count_sum:
-                    # 수량 column 과 sum 이 다름
+
+                    error = '수량 column 과 sum 이 다름'
                     order_list.pop()
+
                     raise ValueError
 
         except ValueError:
-            print(error)
+            print(error, email.title, email.attachment.name)
             return
 
         # place same address rows together
@@ -297,7 +337,7 @@ class Email(models.Model):
             '품목코드_flat':'품목코드',
         })
 
-        df_order.groupby('품목코드').agg({'수량':'sum'})
+        df_order = df_order.groupby('품목코드').agg({'수량':'sum'}).reset_index()
 
         df_order['품목'] = ''
         df_order['거래처코드'] = seller_dict['거래처코드']
@@ -324,50 +364,48 @@ class Email(models.Model):
 
         df_delivery = sort_by_column(df_delivery, '주소')
 
-        address_prev = None
+        row_prev = None
         index_prev = None
         df_delivery['to_be_deleted'] = False
         for index, row in df_delivery.iterrows():
-            if address_prev and row['주소'] == address_prev:
+            if row_prev is not None:
+                cols_compare = ['고객성명', '주소', '전화번호', '핸드폰번호']
+                for i, col_name in enumerate(cols_compare):
+                    if row[col_name] != row_prev[col_name]:
+                        break
+                if i != len(cols_compare):
+                    continue
+
                 df_delivery.loc[index_prev, '품목'].extend(
                      df_delivery.loc[index, '품목']
                 )
                 df_delivery.loc[index_prev, '수량'].extend(
                      df_delivery.loc[index, '수량']
                 )
+                df_delivery.loc[index_prev, '배송메시지'].extend(
+                     df_delivery.loc[index, '배송메시지']
+                )
+
                 df_delivery.loc[index, 'to_be_deleted'] = True
             else:
                 address_prev = row['주소']
+                row_prev = row
                 index_prev = index
 
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
-        df_delivery = sort_by_column(df_delivery, '고객성명')
-        df_delivery = sort_by_column(df_delivery, '전화번호')
-        df_delivery = sort_by_column(df_delivery, '핸드폰번호')
+        # df_delivery.style.apply(row_style, axis=1)
 
-        index_prev = None
-        df_delivery['maybe_same_customer'] = False
-        for index, row in df_delivery.iterrows():
-            if index_prev:
-                customer_prev = df_delivery.loc[index_prev, '고객성명']
-                phone_prev = df_delivery.loc[index_prev, '전화번호']
-                cellphone_prev = df_delivery.loc[index_prev, '핸드폰번호']
-                if (row['고객성명'] == customer_prev or
-                    row['전화번호'] == phone_prev or
-                    row['핸드폰번호'] == cellphone_prev):
+        def compact(row):
+            result = []
+            for i in zip(row['품목'], row['수량']):
+                l = ' - '.join(str(e) for e in i) + '개';
+                result.append(l)
+            return ' / '.join(result)
 
-                    df_delivery.loc[index, 'maybe_same_customer'] = True
-                    df_delivery.loc[index_prev, 'maybe_same_customer'] = True
-                    # yellow
-                    pass
-            else:
-                index_prev = index
-
-        df_delivery.loc[df_delivery['maybe_same_customer']==True, '택배박스 갯수'] = 0
-        df_delivery.loc[df_delivery['maybe_same_customer']==True, '운임Type'] = '-'
-        df_delivery.style.apply(row_style, axis=1)
-
+        df_delivery['품목'] = df_delivery.apply(compact, axis=1)
+        df_delivery['배송메시지'] = df_delivery.apply(
+            lambda row: ' . '.join(row['배송메시지']), axis=1)
 
         return df_delivery, df_order
 
@@ -398,3 +436,8 @@ def row_style(row):
         return pd.Series('background-color: yellow', row.index)
     else:
         return pd.Series('', row.index)
+
+
+def xstr(s):
+    res = s or ""
+    return res.strip()

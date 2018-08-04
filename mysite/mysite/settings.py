@@ -164,3 +164,6 @@ urlpatterns = [
 
 if DEBUG:
     CELERY_TASK_ALWAYS_EAGER = True
+
+
+OUTPUT_DIR = os.path.join(BASE_DIR, '../../output')
