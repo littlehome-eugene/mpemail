@@ -26,4 +26,5 @@ def eligible_for_process(sender, instance,  **kwargs):
 
     email = instance
     email.title = email.title.strip()
+
     email.eligible_for_process = email.check_eligible_for_process()

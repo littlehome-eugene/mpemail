@@ -10,6 +10,7 @@ from mpemail.models.email import Email
 from pandas import ExcelWriter
 import pandas as pd
 import os
+from django.conf import settings
 
 
 columns_delivery = [
