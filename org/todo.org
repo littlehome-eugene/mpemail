@@ -1,5 +1,4 @@
 
-
 * TODO logistics 정리
   - [X] elligible
     - [X] 등록된 메일 주소로부터 온 메일만 주문 처리 : company.xlsx 의 '자동화 여부' 항목에 저장된 값 사용
@@ -11,7 +10,7 @@
   - [X] 품목이 list 형태임..
   - [X] Not all names specified in 'columns' are found; this will raise a KeyError in the future
   - [X] 2A 요구사항 바뀐것 적용
-  - [ ] order 는 판매자별 품목별로 합쳐서 저장
+  - [X] order 는 판매자별 품목별로 합쳐서 저장
 
 * TODO 메일의 상태 관리
   - [ ] 처리해야 할 메일인지 ..
