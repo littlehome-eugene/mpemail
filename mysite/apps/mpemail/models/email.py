@@ -44,9 +44,10 @@ class EmailQuerySet(QuerySet):
         queryset = self
 
         queryset = queryset.filter(
-            eligible_for_process=True
-        ).filter(
-            auto_order_status__in=['initial', 'process_fail']
+            eligible_for_process=True,
+            # for test
+        # ).filter(
+        #     auto_order_status__in=['initial', 'process_fail']
         )
         return queryset
 

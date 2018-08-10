@@ -120,7 +120,6 @@ class EmailViewSet(viewsets.ModelViewSet):
     def order(self, request, *args, **kwargs):
         mids = request.data.get('mids')
 
-        import pdb; pdb.set_trace()
         emails = Email.objects.eligible_for_order().filter(msg_mid__in=mids)
 
         df_delivery = pd.DataFrame(columns=columns_delivery)
@@ -134,13 +133,20 @@ class EmailViewSet(viewsets.ModelViewSet):
                 res = email.process_order()
                 df_delivery_1, df_order_1 = res
 
+                email.auto_order_status = 'process_success'
+                email.save()
                 result[email.msg_mid] = {
-                    'error': None
+                    'error': None,
+                    'auto_order_status': email.auto_order_status,
                 }
             except ValueError as e:
                 error = str(e)
+                email.auto_order_status = 'process_fail'
+                email.save()
+
                 result[email.msg_mid] = {
-                    'error': error
+                    'error': error,
+                    'auto_order_status': email.auto_order_status,
                 }
                 continue
 

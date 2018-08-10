@@ -167,4 +167,3 @@ if DEBUG:
 
 
 OUTPUT_DIR = os.path.join(BASE_DIR, '../output')
-o
