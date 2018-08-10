@@ -112,7 +112,7 @@ class Email(models.Model):
         if email.excel_attachment_count != 1:
             return False
 
-        df_seller = df_company.loc[df_company['email'] == email.sender]
+        df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
         if df_seller.empty:
             return False
 
@@ -123,7 +123,7 @@ class Email(models.Model):
             return False
 
         for i, keyword in enumerate(exclude_keywords):
-            if email.body_text.contains(keyword):
+            if keyword in email.body_text:
                 break
         if i == len(exclude_keywords):
             return False
@@ -154,15 +154,10 @@ class Email(models.Model):
         df = pd.read_excel(attachment, dtype=str)
         df.columns = df.columns.str.strip()
 
-        df_seller = df_company.loc[df_company['email'] == email.sender]
-        try:
-            if df_seller.empty:
-                error = '판매자 못찾음'
-                raise ValueError
-            seller_dict = df_seller.iloc[0].to_dict()
-        except ValueError:
-            print(error, email.title)
-            return
+        df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
+        if df_seller.empty:
+            raise ValueError('판매자 못찾음')
+        seller_dict = df_seller.iloc[0].to_dict()
 
         product = df_keyword['품목']
         count = df_keyword['수량']
@@ -221,110 +216,105 @@ class Email(models.Model):
             elif column in cellphone.tolist():
                 cellphone_column = column
 
-        try:
-            if product_column is None:
-                error = '품목 없음'
-                raise ValueError
-            if customer_column is None:
-                error = '고객성명 없음'
-                raise ValueError
-            if address_column is None:
-                error = '주소 없음'
-                raise ValueError
-            if phone_column is None:
-                error = '전화번호 없음'
-                raise ValueError
+        if product_column is None:
+            raise ValueError('품목 없음')
+        if customer_column is None:
+            error = '고객성명 없음'
+            raise ValueError(error)
+        if address_column is None:
+            error = '주소 없음'
+            raise ValueError(error)
+        if phone_column is None:
+            error = '전화번호 없음'
+            raise ValueError(error)
 
-            for index, row in df.iterrows():
-                products = row[product_column].split('//')
-                count_by_countcolumn = row.get(count_column) or None
-                if count_by_countcolumn is not None:
-                    count_by_countcolumn = int(count_by_countcolumn)
-                count_sum = 0
+        for index, row in df.iterrows():
+            products = row[product_column].split('//')
+            count_by_countcolumn = row.get(count_column) or None
+            if count_by_countcolumn is not None:
+                count_by_countcolumn = int(count_by_countcolumn)
+            count_sum = 0
 
-                if sender_column:
-                    sender = row[sender_column]
-                else:
-                    sender = seller_dict['거래처명']
+            if sender_column:
+                sender = row[sender_column]
+            else:
+                sender = seller_dict['거래처명']
 
-                if sender_phone_column:
-                    sender_phone = row[sender_phone_column]
-                else:
-                    sender_phone = seller_dict['전화']
+            if sender_phone_column:
+                sender_phone = row[sender_phone_column]
+            else:
+                sender_phone = seller_dict['전화']
 
-                if sender_cellphone_column:
-                    sender_cellphone = row[sender_cellphone_column]
-                else:
-                    sender_cellphone = seller_dict['핸드폰']
+            if sender_cellphone_column:
+                sender_cellphone = row[sender_cellphone_column]
+            else:
+                sender_cellphone = seller_dict['핸드폰']
 
 
-                order_dict = {
-                    '고객성명': row[customer_column],
-                    '우편번호': row.get(postal_column),
-                    '주소': ' '.join([
-                        xstr(row.get(address_column)),
-                        xstr(row.get(address_detail_column)),
-                    ]),
-                    '전화번호': str(row[phone_column] or ""),
-                    '배송메시지': list(row.get(message_column) or ''),
-                    '핸드폰번호': str(row.get(cellphone_column) or ""),
+            order_dict = {
+                '고객성명': row[customer_column],
+                '우편번호': row.get(postal_column),
+                '주소': ' '.join([
+                    xstr(row.get(address_column)),
+                    xstr(row.get(address_detail_column)),
+                ]),
+                '전화번호': str(row[phone_column] or ""),
+                '배송메시지': list(row.get(message_column) or ''),
+                '핸드폰번호': str(row.get(cellphone_column) or ""),
 
-                    '보내는분 성명': sender,
-                    '보내는분 전화': str(sender_phone or ""),
-                    '보내는분 핸드폰': str(sender_cellphone or ""),
-                    '보내는분 우편본호': seller_dict['우편번호'],
-                    '보내는분 주소': seller_dict['주소'],
+                '보내는분 성명': sender,
+                '보내는분 전화': str(sender_phone or ""),
+                '보내는분 핸드폰': str(sender_cellphone or ""),
+                '보내는분 우편본호': seller_dict['우편번호'],
+                '보내는분 주소': seller_dict['주소'],
 
-                    '택배박스 갯수': '',
-                    '운임Type': '',
-                    '주문번호': str(uuid.uuid4()),
+                '택배박스 갯수': '',
+                '운임Type': '',
+                '주문번호': str(uuid.uuid4()),
 
-                }
-                for product in products:
-                    productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
-                    if productcode_count_pairs_bogus:
-                        if productcode_count_pairs_bogus[0][1]:
-                            error = '수량 파싱 실패'
-                            raise ValueError
-
-                    productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', row[product_column])
-                    if len(productcode_count_pairs) == 1:
-
-                        product_code = productcode_count_pairs[0][0]
-                        count = productcode_count_pairs[0][1] or 1
-                        count = int(count)
-                        count_sum += count
-                    else:
-                        error = '품목코드 파싱 실패'
+            }
+            for product in products:
+                productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
+                if productcode_count_pairs_bogus:
+                    if productcode_count_pairs_bogus[0][1]:
+                        error = '수량 파싱 실패'
                         raise ValueError
 
-                    order_dict.setdefault('품목코드', [])
-                    order_dict['품목코드'].append(product_code)
-                    order_dict['품목코드_flat'] = product_code
+                productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', row[product_column])
+                if len(productcode_count_pairs) == 1:
 
-                    product = df_product.loc[df_product['품목코드']==product_code]
-                    product_name = product.iloc[0]['품목명']
-                    order_dict.setdefault('품목', [])
-                    order_dict['품목'].append(product_name)
-                    order_dict['품목_flat'] = product_name
+                    product_code = productcode_count_pairs[0][0]
+                    count = productcode_count_pairs[0][1] or 1
+                    count = int(count)
+                    count_sum += count
+                else:
+                    error = '품목코드 파싱 실패'
+                    raise ValueError(error)
 
-                    order_dict.setdefault('수량', [])
-                    order_dict['수량'].append(count)
-                    order_dict['수량_flat'] = count
+                order_dict.setdefault('품목코드', [])
+                order_dict['품목코드'].append(product_code)
+                order_dict['품목코드_flat'] = product_code
 
-                    order_list.append(order_dict)
+                product = df_product.loc[df_product['품목코드']==product_code]
+                product_name = product.iloc[0]['품목명']
+                order_dict.setdefault('품목', [])
+                order_dict['품목'].append(product_name)
+                order_dict['품목_flat'] = product_name
+
+                order_dict.setdefault('수량', [])
+                order_dict['수량'].append(count)
+                order_dict['수량_flat'] = count
+
+                order_list.append(order_dict)
 
 
-                if count_by_countcolumn and count_by_countcolumn != count_sum:
+            if count_by_countcolumn and count_by_countcolumn != count_sum:
 
-                    error = '수량 column 과 sum 이 다름'
-                    order_list.pop()
+                error = '수량 column 과 sum 이 다름'
+                order_list.pop()
 
-                    raise ValueError
+                raise ValueError(error)
 
-        except ValueError:
-            print(error, email.title, email.attachment.name)
-            return
 
         # place same address rows together
 
