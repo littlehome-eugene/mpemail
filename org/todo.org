@@ -11,6 +11,37 @@
   7/17 3:26 알앤쇼핑의 ‘★꿈꾸는이웃(알앤쇼핑)_[광동] 6년근 에이스홍삼스틱_발주서_20180709081954.xls’
 
 
+get_logistics_info 에 email 의 id 를 전달했다가 전달받으면 좋겠습니다.
+email 을 찾는데 그편이 수월할 것 같습니다.
+
+
+company.xlsx 에서 자동화여부가 0 이면 email 이 있더라도 처리하지 않는건가요?
+오류로 처리하면 되죠?
+
+
+
+* TODO 메일의 상태 관리
+  - [X] 처리해야 할 메일인지 ..
+    - [X] 메일 제목 에 특정 단어
+    - [X] 메일 주소
+    - [X] 엑셀 파일 있는지
+    - [X] 제목 본문에 특정 단어 포함
+  - [ ] 주문 처리, 송장번호 입력, 회신 여부
+    - [ ] model
+    - [ ] template 에 넣자
+  - [X] status 를 긁어온다
+  - [X] 주문 완료 버튼
+    - [X] 팝업
+    - [X] 완료 처리
+  - [X] manual button
+
+* TODO reply
+  - [X] save df
+  - [X] call get_logistics_info
+  - [ ] 받는분 from df
+  - [ ] 운송장번호, 받는분 주소, 품목 get_logistics_info
+  - [ ] table template
+  - [ ] case 2
 
 
 
@@ -27,15 +58,6 @@
   - [X] 2A 요구사항 바뀐것 적용
   - [X] order 는 판매자별 품목별로 합쳐서 저장
 
-* TODO 메일의 상태 관리
-  - [ ] 처리해야 할 메일인지 ..
-    - [ ] 메일 제목 에 특정 단어
-    - [ ] 메일 주소
-    - [ ] 엑셀 파일 있는지
-    - [ ] 제목 본문에 특정 단어 포함
-  - [ ] 주문 처리, 송장번호 입력, 회신 여부
-    - [ ] model
-    - [ ] template 에 넣자
 
 * NEXT excel column ordering
   CLOSED: [2018-07-30 Mon 21:18]

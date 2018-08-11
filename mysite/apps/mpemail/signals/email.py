@@ -28,3 +28,6 @@ def eligible_for_process(sender, instance,  **kwargs):
     email.title = email.title.strip()
 
     email.eligible_for_process = email.check_eligible_for_process()
+
+    if not email.eligible_for_process:
+        email.auto_order_status = 'process_fail'

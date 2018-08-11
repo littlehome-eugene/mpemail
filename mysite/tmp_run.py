@@ -106,7 +106,13 @@ from pandas import ExcelWriter
 # writer.save()
 
 
-email = Email.objects.get(msg_mid='1L')
+# email = Email.objects.get(msg_mid='1L')
+
+# import pdb; pdb.set_trace()
+# email.check_eligible_for_process()
+
+from mpemail.logistics import get_logistics_info
+
 
 import pdb; pdb.set_trace()
-email.check_eligible_for_process()
+get_logistics_info('20180606', '20180808')

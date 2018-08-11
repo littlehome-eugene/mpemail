@@ -39,3 +39,5 @@ links
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 이것도 처리해야 되는지
 
 keyword-title.xlsx 의 column 과 row 를 바꿔서
+
+            tp = MIMEText(new_body, _subtype='html', _charset=charset)

@@ -2,6 +2,7 @@
 import os
 import re
 from django.db import models
+from django.db.models import F
 
 from urllib.parse import urljoin
 from django.conf import settings
@@ -51,6 +52,26 @@ class EmailQuerySet(QuerySet):
         )
         return queryset
 
+    def status(self):
+        values = self.annotate(
+            mid=F('msg_mid'),
+            error=F('auto_order_error')
+        ).values(
+            'mid',
+            'auto_order_status',
+            'auto_reply_status',
+            'manual_order_status',
+            'manual_reply_status',
+            'error',
+        )
+
+        result = {}
+        for v in values:
+            mid = v.pop('mid')
+            result[mid] = v
+
+        return result
+
 
 class EmailManager(models.Manager):
 
@@ -68,12 +89,12 @@ class Email(models.Model):
         ['initial', 'initial'],
         ['process_success', 'process_success'],
         ['process_fail', 'process_fail'],
-        ['done', 'done'],
+        ['complete', 'complete'],
     ]
 
     MANUAL_STATUS = [
         ['initial', 'initial'],
-        ['done', 'done'],
+        ['complete', 'complete'],
     ]
 
     # email data
@@ -81,6 +102,7 @@ class Email(models.Model):
     msg_id = models.CharField(max_length=128, blank=True, db_index=True)
     title = models.CharField(max_length=2048, blank=True, db_index=True)
     sender = models.CharField(max_length=128, blank=True, db_index=True)
+    sender_name = models.CharField(max_length=128, blank=True, default="")
 
     excel_attachment_count = models.IntegerField(default=0)
     body_text = models.TextField(default='')
@@ -89,6 +111,8 @@ class Email(models.Model):
     # email data
 
     eligible_for_process = models.BooleanField(default=False, db_index=True)
+    auto_order_error = models.CharField(max_length=128, blank=True, default="")
+    timestamp = models.IntegerField(default=0, db_index=True)
 
     # status
     auto_order_status = models.CharField(max_length=16, choices=AUTO_STATUS, default='initial')
@@ -103,6 +127,9 @@ class Email(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # meta data
 
+    order_data_path = models.CharField(max_length=256, default="", blank=True)
+    reply_html = models.TextField(default='')
+
     objects = EmailManager.from_queryset(EmailQuerySet)()
 
 
@@ -111,22 +138,26 @@ class Email(models.Model):
         email = self
 
         if email.excel_attachment_count != 1:
+            email.auto_order_error = '첨부파일이 하나가 아님'
             return False
 
         df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
         if df_seller.empty:
+            email.auto_order_error = '판매자를 찾을 수 없음'
             return False
 
         for i, title in enumerate(include_titles):
             if email.title.startswith(title):
                 break
         if i == len(include_titles):
+            email.auto_order_error = '이메일 제목'
             return False
 
         for i, keyword in enumerate(exclude_keywords):
-            if keyword in email.body_text:
+            if keyword in email.body_text or keyword in email.title:
                 break
         if i == len(exclude_keywords):
+            email.auto_order_error = '제외어가 포함되어 있음'
             return False
 
         return True
@@ -404,6 +435,29 @@ class Email(models.Model):
     def __str__(self):
 
         return u'{} {}'.format(self.title, self.sender)
+
+    def prepare_reply(self, df_logistics):
+
+        email = self
+        df_delivery = pd.read_csv(email.order_data_path)
+
+        df = df_delivery[['고객성명', '주문번호']].copy()
+        df = df.rename(columns={
+            '고객성명': '받는분'
+        })
+
+        df = pd.concat([df.set_index('주문번호'), df_logistics.set_index('order_no')], axis=1, join='inner').reset_index()
+
+        df = df[['logis_no', '받는분', 'addr', 'product']]
+        df = df.rename(columns={
+            'logis_no': '운송장번호',
+            'addr': '받는분주소',
+            'product': '품목명',
+        })
+
+        email.reply_html = df.to_html()
+
+
 
 
 def sort_by_column(df, column_name):

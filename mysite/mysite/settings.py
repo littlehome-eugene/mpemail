@@ -167,3 +167,9 @@ if DEBUG:
 
 
 OUTPUT_DIR = os.path.join(BASE_DIR, '../output')
+
+
+EMAIL_SENDER = 'test@natureprime.co.kr'
+EMAIL_SENDER_NAME = 'Sales'
+
+DATA_DIR = os.path.join(BASE_DIR, 'data')
