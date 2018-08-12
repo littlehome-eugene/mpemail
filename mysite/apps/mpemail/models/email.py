@@ -19,7 +19,7 @@ keyword_title_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/ke
 df_keyword = pd.read_excel(keyword_title_excel)
 
 company_excel = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/company.xlsx')
-df_company = pd.read_excel(company_excel)
+df_company = pd.read_excel(company_excel, dtype=str)
 
 include_title_path = os.path.join(settings.PROJECT_DIR, 'apps/mpemail/config/include-title.txt')
 
@@ -269,8 +269,6 @@ class Email(models.Model):
 
             if sender_column:
                 sender = row[sender_column]
-            else:
-                sender = seller_dict['거래처명']
 
             if sender_phone_column:
                 sender_phone = row[sender_phone_column]
@@ -283,8 +281,14 @@ class Email(models.Model):
                 sender_cellphone = seller_dict['핸드폰']
 
 
+            customer = row[customer_column]
+            if sender:
+                if sender != seller_dict['거래처명']:
+                    if sender != row[customer_column]:
+                        customer = '{} ({})'.format(customer, sender)
+
             order_dict = {
-                '고객성명': row[customer_column],
+                '고객성명': customer,
                 '우편번호': row.get(postal_column),
                 '주소': ' '.join([
                     xstr(row.get(address_column)),
@@ -294,7 +298,7 @@ class Email(models.Model):
                 '배송메시지': list(row.get(message_column) or ''),
                 '핸드폰번호': str(row.get(cellphone_column) or ""),
 
-                '보내는분 성명': sender,
+                '보내는분 성명': seller_dict['거래처명'],
                 '보내는분 전화': str(sender_phone or ""),
                 '보내는분 핸드폰': str(sender_cellphone or ""),
                 '보내는분 우편본호': seller_dict['우편번호'],
@@ -373,10 +377,24 @@ class Email(models.Model):
         df_order['현잔액'] = ''
         df_order['품목명'] = ''
         df_order['규격'] = product.iloc[0]['규격']
-        df_order['단가(vat포함)'] = ''  # todo
+
+        def price(row):
+            price = df_product.loc[df_product['품목코드']==row['품목코드']][seller_dict['거래처코드']]
+            return price
+
+
+        df_order['단가(vat포함)'] = df_order.apply(price, axis=1)
+
         df_order['외화금액'] = ''
-        df_order['공급가액'] = ''  # todo
-        df_order['부가세'] = ''  # todo
+
+        def price_total(row):
+            return int(row['단가(vat포함)'] * row['수량'] * 10 /11)
+        df_order['공급가액'] = df_order.apply(price_total, axis=1)
+
+        def tax(row):
+            return row['단가(vat포함)'] * row['수량'] - row['공급가액']
+
+        df_order['부가세'] = df_order.apply(tax, axis=1)
 
         df_order['적요'] = attachment.name.split('/')[-1]
         df_order['부대비용'] = ''
@@ -416,7 +434,7 @@ class Email(models.Model):
 
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
-        # df_delivery.style.apply(row_style, axis=1)
+        df_delivery.style.apply(row_style, axis=1)
 
         def compact(row):
             result = []
@@ -477,7 +495,7 @@ def sort_by_column(df, column_name):
 
 
 def row_style(row):
-    if row.maybe_same_customer:
+    if len(row['품목']) > 1:
         return pd.Series('background-color: yellow', row.index)
     else:
         return pd.Series('', row.index)

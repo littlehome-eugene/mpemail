@@ -125,7 +125,11 @@ class EmailViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=['post', 'put', 'patch'])
     def order(self, request, *args, **kwargs):
+
+        import pdb; pdb.set_trace()
         mids = request.data.get('mids')
+        if mids is None:
+            mids = request._request.POST.get('mids')
 
         emails = Email.objects.eligible_for_order().filter(msg_mid__in=mids)
 
@@ -158,12 +162,11 @@ class EmailViewSet(viewsets.ModelViewSet):
                     'auto_order_status': email.auto_order_status,
                 }
                 path = os.path.join(settings.DATA_DIR, time.strftime("%Y/%m/%d"))
-                os.makedirs(path)
+                os.makedirs(path, exist_ok=True)
 
                 path = os.path.join(path, '{}.csv'.format(email.id))
                 df_delivery_1.to_csv(path_or_buf=path)
 
-                import pdb; pdb.set_trace()
                 email.order_data_path = path
                 email.save()
 
@@ -235,7 +238,7 @@ class EmailViewSet(viewsets.ModelViewSet):
         result = emails.status()
 
         path = os.path.join(settings.OUTPUT_DIR, time.strftime("%Y/%m/%d"))
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
 
         os.rename(
             os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
@@ -342,6 +345,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                 'subject': subject
             }
 
+            import pdb; pdb.set_trace()
             r = requests.post(
                 url,
                 json=data

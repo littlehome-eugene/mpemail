@@ -25,6 +25,22 @@ from django.conf import settings
 from mpemail.models.email import Email
 from pandas import ExcelWriter
 
+from django.http import HttpRequest, QueryDict
+
+request = HttpRequest()
+from mpemail.rest.viewsets.email import EmailViewSet
+request.method = 'post'
+data = {
+    'mids': ['0', '1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1A', '1B', '1C', '1D', '1E', '1F', '1G']
+}
+
+keys = ['mids']
+values = ['0', '1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1A', '1B', '1C', '1D', '1E', '1F', '1G']
+
+request.POST = QueryDict.fromkeys(keys, values)
+
+import pdb; pdb.set_trace()
+EmailViewSet.as_view({'post': 'order'})(request)
 
 # columns_delivery = [
 #     '보내는분 성명',
@@ -111,8 +127,8 @@ from pandas import ExcelWriter
 # import pdb; pdb.set_trace()
 # email.check_eligible_for_process()
 
-from mpemail.logistics import get_logistics_info
+# from mpemail.logistics import get_logistics_info
 
 
-import pdb; pdb.set_trace()
-get_logistics_info('20180606', '20180808')
+# import pdb; pdb.set_trace()
+# get_logistics_info('20180606', '20180808')
