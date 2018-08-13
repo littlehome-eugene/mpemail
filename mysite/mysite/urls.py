@@ -23,3 +23,10 @@ urlpatterns = [
         include('mpemail.urls', namespace='mpemail', app_name='mpemail')),
 
 ]
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += [
+        # ... the rest of your URLconf goes here ...
+    ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

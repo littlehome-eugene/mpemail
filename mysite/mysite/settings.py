@@ -152,24 +152,67 @@ CORS_ORIGIN_ALLOW_ALL = True
 ALLOWED_HOSTS = ['*']
 
 
-from django.conf import settings
-from django.conf.urls.static import static
 
 MEDIA_URL = "media/"
 
-urlpatterns = [
-    # ... the rest of your URLconf goes here ...
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 if DEBUG:
     CELERY_TASK_ALWAYS_EAGER = True
 
 
-OUTPUT_DIR = os.path.join(BASE_DIR, '../output')
+OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
 
 
 EMAIL_SENDER = 'test@natureprime.co.kr'
 EMAIL_SENDER_NAME = 'Sales'
 
 DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+LOG_DIR = os.path.join(BASE_DIR, 'log')
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'myproject.log'),
+            'when': 'midnight', # this specifies the interval
+            'interval': 1, # defaults to 1, only necessary for other values
+            'backupCount': 365*10, # how many backup file to keep, 365 days
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+
+    },
+    'loggers': {
+        # 'django': {
+        #     'handlers': ['file'],
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        # },
+        'django': {
+            'handlers': ['console'],
+            'propagate': True,
+        },
+        'my': {
+            'handlers': ['file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        }
+    },
+}

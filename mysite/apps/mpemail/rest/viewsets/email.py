@@ -2,6 +2,10 @@ import json
 import datetime
 import time
 import requests
+import json
+import re
+import logging
+logger = logging.getLogger('my')
 
 from rest_framework.response import Response
 from rest_framework import viewsets
@@ -126,10 +130,16 @@ class EmailViewSet(viewsets.ModelViewSet):
     @list_route(methods=['post', 'put', 'patch'])
     def order(self, request, *args, **kwargs):
 
-        import pdb; pdb.set_trace()
         mids = request.data.get('mids')
+
         if mids is None:
             mids = request._request.POST.get('mids')
+
+        log_data = {
+            'command': '주문',
+            'mids': mids
+        }
+        logger.info(log_data)
 
         emails = Email.objects.eligible_for_order().filter(msg_mid__in=mids)
 
@@ -170,6 +180,9 @@ class EmailViewSet(viewsets.ModelViewSet):
                 email.order_data_path = path
                 email.save()
 
+                df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0)
+                df_order = pd.concat([df_order, df_order_1], axis=0)
+
             except ValueError as e:
                 error = str(e)
                 email.auto_order_status = 'process_fail'
@@ -181,10 +194,6 @@ class EmailViewSet(viewsets.ModelViewSet):
                     'auto_order_status': email.auto_order_status,
                 }
                 continue
-
-            df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0)
-            df_order = pd.concat([df_order, df_order_1], axis=0)
-
 
         if result:
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'))
@@ -202,11 +211,17 @@ class EmailViewSet(viewsets.ModelViewSet):
             )
 
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
-            df_delivery.to_excel(
+            df_order.to_excel(
                 writer,
                 columns=columns_order
             )
             writer.save()
+
+            # for test
+            df_order.to_csv(
+                os.path.join(settings.OUTPUT_DIR, 'order.csv'),
+                columns=columns_order
+            )
 
         return Response(result)
 
@@ -227,6 +242,12 @@ class EmailViewSet(viewsets.ModelViewSet):
     def order_complete(self, request, *args, **kwargs):
 
         mids = request.data.get('mids')
+
+        log_data = {
+            'command': '주문완료',
+            'mids': mids
+        }
+        logger.info(log_data)
 
         emails = Email.objects.filter(msg_mid__in=mids).filter(
             auto_order_status='process_success'
@@ -256,6 +277,15 @@ class EmailViewSet(viewsets.ModelViewSet):
     def manual_order_toggle(self, request, *args, **kwargs):
 
         mid = request.data.get('mid')
+
+        mids = request.data.get('mids')
+
+        log_data = {
+            'command': 'manual 주문 toggle',
+            'mid': mid
+        }
+        logger.info(log_data)
+
         email = Email.objects.get(msg_mid=mid)
 
         if email.manual_order_status == 'initial':
@@ -275,6 +305,13 @@ class EmailViewSet(viewsets.ModelViewSet):
     def manual_reply_toggle(self, request, *args, **kwargs):
 
         mid = request.data.get('mid')
+
+        log_data = {
+            'command': 'manual 송장 toggle',
+            'mid': mid
+        }
+        logger.info(log_data)
+
         email = Email.objects.get(msg_mid=mid)
 
         if email.manual_reply_status == 'initial':
@@ -301,6 +338,13 @@ class EmailViewSet(viewsets.ModelViewSet):
             auto_reply_status__in=['initial', 'process_fail']
         ).order_by('timestamp')
 
+        log_data = {
+            'command': '송장발송',
+            'emails': list(emails.values_list('sender', flat=True))
+        }
+        logger.info(log_data)
+
+
         email = emails.first()
 
         start_date = None
@@ -323,14 +367,44 @@ class EmailViewSet(viewsets.ModelViewSet):
         bcc = ''
         attach_pgp_pubkey = 'no'
 
+        url_create = '/api/0/message/reply/composer.jhtml!minimal'
+        url_create = urljoin(settings.MAILPILE_URL, url_create)
+
         url = '/api/0/message/update/send/'
         url = urljoin(settings.MAILPILE_URL, url)
+
+        headers = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'}
 
         for email in emails:
             email.prepare_reply(df_logistics)
 
-            body = email.reply_html
+            data = {
+                'mid[]': email.msg_mid,
+                # 'mid[]': '2S',    # for test
+                'reply_all': True
+            }
+
+            res = requests.post(
+                url_create,
+                headers=headers,
+                data=data
+            )
+
+            mid = None
+            if res.ok:
+                mid = re.search('data-mid=\\\\"([^\\\]+)\\\\"', res.text).group(1)
+            else:
+                email.auto_reply_status = 'process_fail'
+                email.save()
+                continue
+            if mid is None:
+                email.auto_reply_status = 'process_fail'
+                email.save()
+                continue
+
+            body = '<!DOCTYPE html><html><head><title></title></head><body>{}</body></html>'.format(email.reply_html)
             to = email.sender
+            # to = 'p.junks@gmail.com'  # for test
             subject = 'Re: {}'.format(email.title)
 
             data = {
@@ -338,15 +412,26 @@ class EmailViewSet(viewsets.ModelViewSet):
                 'from': from_,
                 'cc': cc,
                 'encryption': encryption,
-                'mid': email.msg_mid,
+                # 'mid': email.msg_mid,
+                'mid': mid,
                 'bcc': '',
                 'to': to,
                 'attach-pgp-pubkey': 'no',
-                'subject': subject
+                'subject': subject,
             }
 
-            import pdb; pdb.set_trace()
-            r = requests.post(
+            res = requests.post(
                 url,
-                json=data
+                headers=headers,
+                data=data
             )
+
+            if res.ok:
+                email.auto_reply_status = 'complete'
+            else:
+                email.auto_reply_status = 'process_fail'
+            email.save()
+
+        result = emails.status()
+
+        return Response(result)

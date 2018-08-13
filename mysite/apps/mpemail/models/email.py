@@ -269,7 +269,8 @@ class Email(models.Model):
 
             if sender_column:
                 sender = row[sender_column]
-
+            else:
+                sender = None
             if sender_phone_column:
                 sender_phone = row[sender_phone_column]
             else:
@@ -332,6 +333,11 @@ class Email(models.Model):
                 order_dict['품목코드_flat'] = product_code
 
                 product = df_product.loc[df_product['품목코드']==product_code]
+
+                remaining = product.iloc[0]['재고 여부']
+                if int(remaining) == 0:
+                    raise ValueError('재고 없음')
+
                 product_name = product.iloc[0]['품목명']
                 order_dict.setdefault('품목', [])
                 order_dict['품목'].append(product_name)
@@ -340,6 +346,10 @@ class Email(models.Model):
                 order_dict.setdefault('수량', [])
                 order_dict['수량'].append(count)
                 order_dict['수량_flat'] = count
+
+                order_dict.setdefault('카톤', [])
+                caton = product.iloc[0]['카톤수']
+                order_dict['카톤'].append(caton)
 
                 order_list.append(order_dict)
 
@@ -425,6 +435,9 @@ class Email(models.Model):
                 df_delivery.loc[index_prev, '배송메시지'].extend(
                      df_delivery.loc[index, '배송메시지']
                 )
+                df_delivery.loc[index_prev, '카톤'].extend(
+                     df_delivery.loc[index, '카톤']
+                )
 
                 df_delivery.loc[index, 'to_be_deleted'] = True
             else:
@@ -434,7 +447,21 @@ class Email(models.Model):
 
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
+        def yellow(row):
+            if len(row['품목']) > 1:
+                return True
+
+            for caton, count in zip(row['카톤'], row['수량']):
+                if caton > count:
+                    return True
+
+            return False
+
+        df_delivery['yellow'] = df_delivery.apply(yellow, axis=1)
         df_delivery.style.apply(row_style, axis=1)
+
+        df_delivery.loc[df_delivery['yellow']==True, '택배박스 갯수'] = 0
+        df_delivery.loc[df_delivery['yellow']==True, '운임Type'] = '-'
 
         def compact(row):
             result = []
@@ -495,10 +522,11 @@ def sort_by_column(df, column_name):
 
 
 def row_style(row):
-    if len(row['품목']) > 1:
+    if row['yellow']:
         return pd.Series('background-color: yellow', row.index)
-    else:
-        return pd.Series('', row.index)
+
+    return pd.Series('', row.index)
+
 
 
 def xstr(s):
