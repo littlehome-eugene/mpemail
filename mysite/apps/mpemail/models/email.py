@@ -53,7 +53,9 @@ class EmailQuerySet(QuerySet):
         return queryset
 
     def status(self):
-        values = self.annotate(
+        queryset = self
+        # queryset = Email.objects.filter(id__in=queryset.values_list('id', flat=True))
+        values = queryset.annotate(
             mid=F('msg_mid'),
             error=F('auto_order_error')
         ).values(
@@ -106,8 +108,8 @@ class Email(models.Model):
 
     excel_attachment_count = models.IntegerField(default=0)
     body_text = models.TextField(default='')
-    attachment = models.FileField(upload_to='attachment/%Y/%m/%d/', null=True)
-    attachment_count = models.IntegerField(default=0)  # this is used in part-{attachment_count}
+    # attachment = models.FileField(upload_to='attachment/%Y/%m/%d/', null=True)
+    # attachment_count = models.IntegerField(default=0)  # this is used in part-{attachment_count}
     # email data
 
     eligible_for_process = models.BooleanField(default=False, db_index=True)
@@ -127,8 +129,8 @@ class Email(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # meta data
 
-    order_data_path = models.CharField(max_length=256, default="", blank=True)
-    reply_html = models.TextField(default='')
+    # order_data_path = models.CharField(max_length=256, default="", blank=True)
+    # reply_html = models.TextField(default='')
 
     objects = EmailManager.from_queryset(EmailQuerySet)()
 
@@ -137,8 +139,8 @@ class Email(models.Model):
 
         email = self
 
-        if email.excel_attachment_count != 1:
-            email.auto_order_error = '첨부파일이 하나가 아님'
+        if email.excel_attachment_count == 0:
+            email.auto_order_error = '첨부파일이 없음'
             return False
 
         df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
@@ -162,28 +164,26 @@ class Email(models.Model):
 
         return True
 
-    def attachment_download_url(self):
+    # def attachment_download_url(self):
 
-        email = self
+    #     email = self
 
-        url = '/message/download/get/={mid}/part-{count}/'.format(
-            mid=email.msg_mid,
-            count=email.attachment_count
-        )
+    #     url = '/message/download/get/={mid}/part-{count}/'.format(
+    #         mid=email.msg_mid,
+    #         count=email.attachment_count
+    #     )
 
-        url = urljoin(settings.MAILPILE_URL, url)
+    #     url = urljoin(settings.MAILPILE_URL, url)
 
-        return url
+    #     return url
 
-    def process_order(self):
+    def process_attachment(self, attachment):
 
         error = None
         email = self
         process_order_fail_reason = None
 
-        attachment = email.attachment
-
-        df = pd.read_excel(attachment, dtype=str)
+        df = pd.read_excel(attachment.attachment, dtype=str)
         df.columns = df.columns.str.strip()
 
         df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
@@ -333,6 +333,8 @@ class Email(models.Model):
                 order_dict['품목코드_flat'] = product_code
 
                 product = df_product.loc[df_product['품목코드']==product_code]
+                if product.empty:
+                    raise ValueError('상품 정보 없음')
 
                 remaining = product.iloc[0]['재고 여부']
                 if int(remaining) == 0:
@@ -349,6 +351,10 @@ class Email(models.Model):
 
                 order_dict.setdefault('카톤', [])
                 caton = product.iloc[0]['카톤수']
+                try:
+                    int(caton)
+                except Exception as e:
+                    raise ValueError("카톤수가 숫자가 아님")
                 order_dict['카톤'].append(caton)
 
                 order_list.append(order_dict)
@@ -406,7 +412,7 @@ class Email(models.Model):
 
         df_order['부가세'] = df_order.apply(tax, axis=1)
 
-        df_order['적요'] = attachment.name.split('/')[-1]
+        df_order['적요'] = attachment.attachment.name.split('/')[-1]
         df_order['부대비용'] = ''
         df_order['생상전표생성'] = ''
         df_order['Ecount'] = 'Ecount'
@@ -452,7 +458,7 @@ class Email(models.Model):
                 return True
 
             for caton, count in zip(row['카톤'], row['수량']):
-                if caton > count:
+                if int(caton) > int(count):
                     return True
 
             return False
@@ -484,24 +490,34 @@ class Email(models.Model):
     def prepare_reply(self, df_logistics):
 
         email = self
-        df_delivery = pd.read_csv(email.order_data_path)
+        for attachment in email.attachments.all():
+            df_delivery = pd.read_csv(attachment.order_data_path)
 
-        df = df_delivery[['고객성명', '주문번호']].copy()
-        df = df.rename(columns={
-            '고객성명': '받는분'
-        })
+            df = df_delivery[['고객성명', '주문번호']].copy()
+            df = df.rename(columns={
+                '고객성명': '받는분'
+            })
 
-        df = pd.concat([df.set_index('주문번호'), df_logistics.set_index('order_no')], axis=1, join='inner').reset_index()
+            df = pd.concat([df.set_index('주문번호'), df_logistics.set_index('order_no')], axis=1, join='inner').reset_index()
 
-        df = df[['logis_no', '받는분', 'addr', 'product']]
-        df = df.rename(columns={
-            'logis_no': '운송장번호',
-            'addr': '받는분주소',
-            'product': '품목명',
-        })
+            df = df[['logis_no', '받는분', 'addr', 'product']]
+            df = df.rename(columns={
+                'logis_no': '운송장번호',
+                'addr': '받는분주소',
+                'product': '품목명',
+            })
 
-        email.reply_html = df.to_html()
+            attachment.reply_html = df.to_html()
+            attachment.save()
 
+    @property
+    def reply_html(self):
+
+        result = []
+        for attachment in self.attachments.all():
+            result.append(attachment.reply_html)
+
+        return '<br/>'.join(result)
 
 
 

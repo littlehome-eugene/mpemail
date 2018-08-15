@@ -1,0 +1,5 @@
+[13/Aug/2018 08:06:13] INFO [my:142] {'command': '주문', 'mids': ['16', '17']}
+[13/Aug/2018 08:06:22] INFO [my:250] {'command': '주문완료', 'mids': ['16', '17']}
+[13/Aug/2018 08:24:40] INFO [my:142] {'mids': ['1K', '1L'], 'command': '주문'}
+[13/Aug/2018 09:06:02] INFO [my:345] {'command': '송장발송', 'emails': ['nprimecorp5@gmail.com']}
+[13/Aug/2018 09:07:56] INFO [my:345] {'command': '송장발송', 'emails': ['nprimecorp5@gmail.com']}

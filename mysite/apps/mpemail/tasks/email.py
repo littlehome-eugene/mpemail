@@ -54,9 +54,11 @@ def download_attachment(email_id):
 
     email = Email.objects.get(id=email_id)
 
-    url = email.attachment_download_url()
+    for attachment in email.attachments.all():
+        url = attachment.download_url()
 
-    filename, lf = download(url)
+        filename, lf = download(url)
+        print('downloading attachment')
 
-    print(filename)
-    email.attachment.save(filename, files.File(lf))
+        attachment.attachment.save(filename, files.File(lf))
+        attachment.save()

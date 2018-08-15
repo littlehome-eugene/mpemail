@@ -1,0 +1,69 @@
+* mailpile
+
+  window 용으로 설치한다 (현재 소스는 ubuntu 에서 테스트 함)
+
+  listening ip 를 0.0.0.0
+  port 를 10033 으로 변경한다
+
+mailpile> print sys
+
+{
+    "sys": {
+        "http_host": "0.0.0.0",
+        "http_port": 10033,
+
+mailpile> set sys.http_port = 10033
+mailpile> set sys.http_host = "0.0.0.0"
+
+으로 변경했었던 듯 한데 이것도 좀 삽질이였던걸로 기억함..  mailpile/config/defaults.py 의 http_host/http_port 를 변경해 놓음.
+
+* web server 에서 사용할 db 를 설정한다
+postgresql 을 다운받아 설치한다.
+postgresql 설치가 어려우면 sqlite 를 사용해도 된다.
+(sqlite 을 사용하려면 mysite/mysite/settings.py 의 db 세팅을 다음처럼 변경한다
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+
+    # 'default': {
+    #     # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': 'mpemail',                      # Or path to database file if using sqlite3.
+    #     'USER': 'mpemail',                      # Not used with sqlite3.
+    #     'PASSWORD': 'mpemail',                  # Not used with sqlite3.
+    #     'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.
+    #     'PORT': '5432',                      # Set to empty string for default. Not used with sqlite3.
+    #     'CONN_MAX_AGE': 60,
+    # },
+)
+
+
+유저를 만들고, DB 를 생성한다
+
+유저이름 mpemail
+password mpemail
+db 이름 mpemail
+
+create role mpemail with createdb login encrypted password 'mpemail';
+create database mpemail with owner=mpemail;
+
+pg_hba.conf 에 다음과 같이 추가한다.
+local mpemail mpemail md5
+
+* db 에 테이블들을 생성한다.
+
+cd mail/mysite
+python manage.py migrate
+
+* web server
+
+virtualenv 를 새로 만든다 python3 으로 만들어야 한다.
+(예를들어) mkvirtualenv -p python3 --system-site-packages mpemail
+
+virtualenv 에 라이브러리들을 설치한다
+pip install - r mail/mysite/requirements.pip
+
+서버를 실행한다
+cd mail/mysite
+python manage.py runserver 0.0.0.0:10044

@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from django.db.models import F
 from mpemail.rest.serializers.email import EmailSerializer
 from mpemail.models.email import Email
+from mpemail.models.attachment import Attachment
 from pandas import ExcelWriter
 import pandas as pd
 import os
@@ -96,7 +97,6 @@ class EmailViewSet(viewsets.ModelViewSet):
 
             if attachments:
                 for attachment in attachments:
-                    print(attachment.get('filename'), attachment.get('mimetype'))
                     if attachment.get('mimetype') in Email.ALLOWED_EXCEL_MIME_TYPES:
                         excel_attachment_count += 1
                         attachment_count = attachment.get('count')
@@ -112,17 +112,30 @@ class EmailViewSet(viewsets.ModelViewSet):
                 'sender_name': v['from']['fn'],
                 'timestamp': v['timestamp'],
                 'excel_attachment_count': excel_attachment_count,
-                'attachment_count': attachment_count,
                 'msg_mid': msg_mid,
                 'body_text': body_text,
                 'metadata': json.dumps(metadata[k], ensure_ascii=False),
                 'messagedata': json.dumps(messages[k], ensure_ascii=False),
             }
 
-            Email.objects.update_or_create(
+            email, created = Email.objects.update_or_create(
                 msg_id=msg_id,
                 defaults=data
             )
+
+            if attachments:
+                for attachment in attachments:
+
+                    print(attachment.get('filename'), attachment.get('mimetype'))
+                    if attachment.get('mimetype') in Email.ALLOWED_EXCEL_MIME_TYPES:
+                        attachment_count = attachment.get('count')
+                        Attachment.objects.update_or_create(
+                            email=email,
+                            attachment_count=attachment_count
+                        )
+
+            # for signal
+            email.save()
 
         return Response([])
 
@@ -162,26 +175,27 @@ class EmailViewSet(viewsets.ModelViewSet):
         for email in emails:
 
             try:
-                res = email.process_order()
-                df_delivery_1, df_order_1 = res
+                for attachment in email.attachments.all():
+                    res = email.process_attachment(attachment)
+                    df_delivery_1, df_order_1 = res
 
-                email.auto_order_status = 'process_success'
-                email.save()
-                result[email.msg_mid] = {
-                    'error': None,
-                    'auto_order_status': email.auto_order_status,
-                }
-                path = os.path.join(settings.DATA_DIR, time.strftime("%Y/%m/%d"))
-                os.makedirs(path, exist_ok=True)
+                    email.auto_order_status = 'process_success'
+                    email.save()
+                    result[email.msg_mid] = {
+                        'error': None,
+                        'auto_order_status': email.auto_order_status,
+                    }
+                    path = os.path.join(settings.DATA_DIR, time.strftime("%Y/%m/%d"))
+                    os.makedirs(path, exist_ok=True)
 
-                path = os.path.join(path, '{}.csv'.format(email.id))
-                df_delivery_1.to_csv(path_or_buf=path)
+                    path = os.path.join(path, '{}.csv'.format(email.id))
+                    df_delivery_1.to_csv(path_or_buf=path)
 
-                email.order_data_path = path
-                email.save()
+                    attachment.order_data_path = path
+                    attachment.save()
 
-                df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0)
-                df_order = pd.concat([df_order, df_order_1], axis=0)
+                    df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0)
+                    df_order = pd.concat([df_order, df_order_1], axis=0)
 
             except ValueError as e:
                 error = str(e)
@@ -432,6 +446,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                 email.auto_reply_status = 'process_fail'
             email.save()
 
+        emails = Email.objects.filter(msg_mid__in=mids)
         result = emails.status()
 
         return Response(result)
