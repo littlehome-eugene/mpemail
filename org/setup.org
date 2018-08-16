@@ -51,11 +51,6 @@ create database mpemail with owner=mpemail;
 pg_hba.conf 에 다음과 같이 추가한다.
 local mpemail mpemail md5
 
-* db 에 테이블들을 생성한다.
-
-cd mail/mysite
-python manage.py migrate
-
 * web server
 
 virtualenv 를 새로 만든다 python3 으로 만들어야 한다.
@@ -63,6 +58,10 @@ virtualenv 를 새로 만든다 python3 으로 만들어야 한다.
 
 virtualenv 에 라이브러리들을 설치한다
 pip install - r mail/mysite/requirements.pip
+
+db 에 테이블들을 생성한다.
+cd mail/mysite
+python manage.py migrate
 
 서버를 실행한다
 cd mail/mysite
