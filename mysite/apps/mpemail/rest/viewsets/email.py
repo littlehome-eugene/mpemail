@@ -188,7 +188,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                     path = os.path.join(settings.DATA_DIR, time.strftime("%Y/%m/%d"))
                     os.makedirs(path, exist_ok=True)
 
-                    path = os.path.join(path, '{}.csv'.format(email.id))
+                    path = os.path.join(path, '{}.csv'.format(attachment.id))
                     df_delivery_1.to_csv(path_or_buf=path)
 
                     attachment.order_data_path = path
