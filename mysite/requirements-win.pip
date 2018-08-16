@@ -5,7 +5,9 @@ django-cors-headers==2.4.0
 django-extensions==2.1.0
 djangorestframework==3.8.2
 kombu==4.2.1
-numpy==1.11.0
+numpy==1.13.1
 pandas==0.22.0
 requests==2.9.1
 xlrd==1.1.0
+psycopg2==2.7.5
+XlsxWriter==0.7.3
