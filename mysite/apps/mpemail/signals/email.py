@@ -21,7 +21,7 @@ def fetch_attachments(sender, instance, created,  **kwargs):
     download_attachment(email.id)
 
 
-@receiver(pre_save, sender=Email)
+@receiver(post_save, sender=Email)
 def eligible_for_process(sender, instance,  **kwargs):
 
     email = instance
@@ -31,3 +31,7 @@ def eligible_for_process(sender, instance,  **kwargs):
 
     if not email.eligible_for_process:
         email.auto_order_status = 'process_fail'
+    Email.objects.filter(id=email.id).update(
+        eligible_for_process=email.eligible_for_process,
+        auto_order_status=email.auto_order_status
+    )

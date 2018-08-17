@@ -86,21 +86,21 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    # }
-
     'default': {
-        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'mpemail',                      # Or path to database file if using sqlite3.
-        'USER': 'mpemail',                      # Not used with sqlite3.
-        'PASSWORD': 'mpemail',                  # Not used with sqlite3.
-        'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '5432',                      # Set to empty string for default. Not used with sqlite3.
-        'CONN_MAX_AGE': 60,
-    },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+
+    # 'default': {
+    #     # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': 'mpemail',                      # Or path to database file if using sqlite3.
+    #     'USER': 'mpemail',                      # Not used with sqlite3.
+    #     'PASSWORD': 'mpemail',                  # Not used with sqlite3.
+    #     'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.
+    #     'PORT': '5432',                      # Set to empty string for default. Not used with sqlite3.
+    #     'CONN_MAX_AGE': 60,
+    # },
 
 }
 

@@ -98,6 +98,7 @@ class EmailViewSet(viewsets.ModelViewSet):
             if attachments:
                 for attachment in attachments:
                     if attachment.get('mimetype') in Email.ALLOWED_EXCEL_MIME_TYPES:
+
                         excel_attachment_count += 1
                         attachment_count = attachment.get('count')
 
@@ -175,6 +176,8 @@ class EmailViewSet(viewsets.ModelViewSet):
         for email in emails:
 
             try:
+                if email.attachments.count() == 0:
+                    raise ValueError('첨부파일이 없음')
                 for attachment in email.attachments.all():
                     res = email.process_attachment(attachment)
                     df_delivery_1, df_order_1 = res

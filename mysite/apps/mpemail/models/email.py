@@ -139,12 +139,13 @@ class Email(models.Model):
 
         email = self
 
-        if email.excel_attachment_count == 0:
-            email.auto_order_error = '첨부파일이 없음'
-            return False
+        # if email.excel_attachment_count == 0:
+        #     email.auto_order_error = '첨부파일이 없음'
+        #     return False
 
         df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
         if df_seller.empty:
+
             email.auto_order_error = '판매자를 찾을 수 없음'
             return False
 
