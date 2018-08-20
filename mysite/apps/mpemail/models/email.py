@@ -396,7 +396,7 @@ class Email(models.Model):
         df_order['규격'] = product.iloc[0]['규격']
 
         def price(row):
-            price = df_product.loc[df_product['품목코드']==row['품목코드']][seller_dict['거래처코드']]
+            price = df_product.loc[df_product['품목코드']==row['품목코드']][seller_dict['거래처코드']].iloc[0]
             return price
 
 
