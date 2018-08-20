@@ -11,3 +11,4 @@ requests==2.9.1
 xlrd==1.1.0
 psycopg2==2.7.5
 XlsxWriter==0.7.3
+jinja2

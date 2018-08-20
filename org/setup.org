@@ -1,4 +1,6 @@
 * mailpile
+  pip install -r requirements.txt
+  (requests 라이브러리가 txt 에 추가되어 있다)
 
   window 용으로 설치한다 (현재 소스는 ubuntu 에서 테스트 함)
 
@@ -50,6 +52,8 @@ create database mpemail with owner=mpemail;
 
 pg_hba.conf 에 다음과 같이 추가한다.
 local mpemail mpemail md5
+
+
 
 * web server
 
