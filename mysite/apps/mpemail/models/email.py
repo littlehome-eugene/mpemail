@@ -65,6 +65,7 @@ class EmailQuerySet(QuerySet):
             'manual_order_status',
             'manual_reply_status',
             'error',
+            'auto_reply_error',
         )
 
         result = {}
@@ -114,6 +115,7 @@ class Email(models.Model):
 
     eligible_for_process = models.BooleanField(default=False, db_index=True)
     auto_order_error = models.CharField(max_length=128, blank=True, default="")
+    auto_reply_error = models.CharField(max_length=128, blank=True, default="")
     timestamp = models.IntegerField(default=0, db_index=True)
 
     # status
@@ -315,7 +317,7 @@ class Email(models.Model):
                 productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
                 if productcode_count_pairs_bogus:
                     if productcode_count_pairs_bogus[0][1]:
-                        error = '수량 파싱 실패'
+                        error = '수량 파싱 실패 {}'.format(index)
                         raise ValueError
 
                 productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', row[product_column])
@@ -326,7 +328,7 @@ class Email(models.Model):
                     count = int(count)
                     count_sum += count
                 else:
-                    error = '품목코드 파싱 실패'
+                    error = '품목코드 파싱 실패 {}'.format(index)
                     raise ValueError(error)
 
                 order_dict.setdefault('품목코드', [])
@@ -335,11 +337,11 @@ class Email(models.Model):
 
                 product = df_product.loc[df_product['품목코드']==product_code]
                 if product.empty:
-                    raise ValueError('상품 정보 없음')
+                    raise ValueError('상품 정보 없음 {}'.format(index))
 
                 remaining = product.iloc[0]['재고 여부']
                 if int(remaining) == 0:
-                    raise ValueError('재고 없음')
+                    raise ValueError('재고 없음 {}'.format(index))
 
                 product_name = product.iloc[0]['품목명']
                 order_dict.setdefault('품목', [])
@@ -355,7 +357,7 @@ class Email(models.Model):
                 try:
                     int(caton)
                 except Exception as e:
-                    raise ValueError("카톤수가 숫자가 아님")
+                    raise ValueError("카톤수가 숫자가 아님 {}".format(index))
                 order_dict['카톤'].append(caton)
 
                 order_list.append(order_dict)
@@ -363,7 +365,7 @@ class Email(models.Model):
 
             if count_by_countcolumn and count_by_countcolumn != count_sum:
 
-                error = '수량 column 과 sum 이 다름'
+                error = '수량 column 과 sum 이 다름 {}'.format(index)
                 order_list.pop()
 
                 raise ValueError(error)
@@ -507,6 +509,9 @@ class Email(models.Model):
                 'addr': '받는분주소',
                 'product': '품목명',
             })
+
+            if df.shape[0] != df_delivery.shape[0]:
+                raise ValueError('운송장 번호 못찾음')
 
             attachment.reply_html = df.to_html()
             attachment.save()

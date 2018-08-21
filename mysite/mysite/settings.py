@@ -174,7 +174,7 @@ LOG_DIR = os.path.join(BASE_DIR, 'log')
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
         'verbose': {
             'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
@@ -194,11 +194,16 @@ LOGGING = {
             'backupCount': 365*10, # how many backup file to keep, 365 days
             'formatter': 'verbose',
         },
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple'
-        },
+
+        # 'null': {
+        #     'level': 'DEBUG',
+        #     'class': 'django.utils.log.NullHandler',
+        # },
+        # # 'console': {
+        #     'level': 'INFO',
+        #     'class': 'logging.StreamHandler',
+        #     'formatter': 'simple'
+        # },
 
     },
     'loggers': {
@@ -206,10 +211,10 @@ LOGGING = {
         #     'handlers': ['file'],
         #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         # },
-        'django': {
-            'handlers': ['console'],
-            'propagate': True,
-        },
+        # 'django': {
+        #     'handlers': ['console'],
+        #     'propagate': True,
+        # },
         'my': {
             'handlers': ['file'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),

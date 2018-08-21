@@ -179,6 +179,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                 if email.attachments.count() == 0:
                     raise ValueError('첨부파일이 없음')
                 for attachment in email.attachments.all():
+
                     res = email.process_attachment(attachment)
                     df_delivery_1, df_order_1 = res
 
@@ -393,7 +394,13 @@ class EmailViewSet(viewsets.ModelViewSet):
         headers = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'}
 
         for email in emails:
-            email.prepare_reply(df_logistics)
+            try:
+                email.prepare_reply(df_logistics)
+            except ValueError as e:
+                email.auto_reply_error = str(e)
+                email.auto_reply_status = 'process_fail'
+                email.save()
+                continue
 
             data = {
                 'mid[]': email.msg_mid,

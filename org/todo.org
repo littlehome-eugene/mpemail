@@ -32,6 +32,10 @@ UI Javascript 에서 webserver 로 10 번을 http 요청, 응답을 받고 그�
 
 전체를 모아서 두개의 엑셀 파일을 만드는 것이라, 이렇게 처리하면, 어디서부터 어디까지가 처리해야 하는 것인지 알기가 어려울 것 같습니다.
 
+plugins/search
+ compose
+mailpile/httpd  emails
+
 
 
 * TODO 메일의 상태 관리
