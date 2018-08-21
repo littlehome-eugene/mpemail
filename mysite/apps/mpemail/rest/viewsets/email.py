@@ -218,7 +218,8 @@ class EmailViewSet(viewsets.ModelViewSet):
 
             df_delivery.to_excel(
                 writer,
-                columns=columns_delivery
+                columns=columns_delivery,
+                index=False,
             )
             writer.save()
 
@@ -231,7 +232,8 @@ class EmailViewSet(viewsets.ModelViewSet):
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
             df_order.to_excel(
                 writer,
-                columns=columns_order
+                columns=columns_order,
+                index=False,
             )
             writer.save()
 

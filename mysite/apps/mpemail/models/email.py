@@ -313,7 +313,9 @@ class Email(models.Model):
                 '주문번호': str(uuid.uuid4()),
 
             }
+
             for product in products:
+                count_none = False
                 productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
                 if productcode_count_pairs_bogus:
                     if productcode_count_pairs_bogus[0][1]:
@@ -324,7 +326,10 @@ class Email(models.Model):
                 if len(productcode_count_pairs) == 1:
 
                     product_code = productcode_count_pairs[0][0]
-                    count = productcode_count_pairs[0][1] or 1
+                    count = productcode_count_pairs[0][1] or None
+                    if count is None:
+                        count_none = True
+                        count = 1
                     count = int(count)
                     count_sum += count
                 else:
@@ -363,7 +368,7 @@ class Email(models.Model):
                 order_list.append(order_dict)
 
 
-            if count_by_countcolumn and count_by_countcolumn != count_sum:
+            if not count_none and count_by_countcolumn and count_by_countcolumn != count_sum:
 
                 error = '수량 column 과 sum 이 다름 {}'.format(index)
                 order_list.pop()
@@ -457,11 +462,12 @@ class Email(models.Model):
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
         def yellow(row):
+
             if len(row['품목']) > 1:
                 return True
 
             for caton, count in zip(row['카톤'], row['수량']):
-                if int(caton) > int(count):
+                if int(count) > int(caton):
                     return True
 
             return False
