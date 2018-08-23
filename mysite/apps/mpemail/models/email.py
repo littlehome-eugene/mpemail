@@ -226,6 +226,7 @@ class Email(models.Model):
 
         order_list = []
         for column in df.columns:
+            column = xstr(column)
             if column in product.tolist():
                 product_column = column
             elif column in count.tolist():
@@ -320,7 +321,7 @@ class Email(models.Model):
                 if productcode_count_pairs_bogus:
                     if productcode_count_pairs_bogus[0][1]:
                         error = '수량 파싱 실패 {}'.format(index)
-                        raise ValueError
+                        raise ValueError(error)
 
                 productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', row[product_column])
                 if len(productcode_count_pairs) == 1:
@@ -559,4 +560,4 @@ def row_style(row):
 
 def xstr(s):
     res = s or ""
-    return res.strip()
+    return "".join(res.split())

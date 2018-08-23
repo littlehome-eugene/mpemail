@@ -202,6 +202,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                     df_order = pd.concat([df_order, df_order_1], axis=0)
 
             except ValueError as e:
+
                 error = str(e)
                 email.auto_order_status = 'process_fail'
                 email.auto_order_error = error
@@ -213,7 +214,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                 }
                 continue
 
-        if result:
+        if not df_delivery.empty:
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'))
 
             df_delivery.to_excel(
