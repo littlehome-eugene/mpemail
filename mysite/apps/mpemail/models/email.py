@@ -226,30 +226,30 @@ class Email(models.Model):
 
         order_list = []
         for column in df.columns:
-            column = xstr(column)
-            if column in product.tolist():
+            column_w = xstr(column)
+            if column_w in product.tolist():
                 product_column = column
-            elif column in count.tolist():
+            elif column_w in count.tolist():
                 count_column = column
-            elif column in customer.tolist():
+            elif column_w in customer.tolist():
                 customer_column = column
-            elif column in postal.tolist():
+            elif column_w in postal.tolist():
                 postal_column = column
-            elif column in address.tolist():
+            elif column_w in address.tolist():
                 address_column = column
-            elif column in address_detail.tolist():
+            elif column_w in address_detail.tolist():
                 address_detail_column = column
-            elif column in phone.tolist():
+            elif column_w in phone.tolist():
                 phone_column = column
-            elif column in message.tolist():
+            elif column_w in message.tolist():
                 message_column = column
-            elif column in sender.tolist():
+            elif column_w in sender.tolist():
                 sender_column = column
-            elif column in sender_phone.tolist():
+            elif column_w in sender_phone.tolist():
                 sender_phone_column = column
-            elif column in sender_cellphone.tolist():
+            elif column_w in sender_cellphone.tolist():
                 sender_cellphone_column = column
-            elif column in cellphone.tolist():
+            elif column_w in cellphone.tolist():
                 cellphone_column = column
 
         if product_column is None:
