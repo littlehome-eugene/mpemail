@@ -186,7 +186,13 @@ class Email(models.Model):
         email = self
         process_order_fail_reason = None
 
-        df = pd.read_excel(attachment.attachment, dtype=str)
+        try:
+            df = pd.read_excel(attachment.attachment, dtype=str)
+        except:
+            email.attachments.delete()
+            email.save()
+            raise ValueError("첨부파일 파싱 오류")
+
         df.columns = df.columns.str.strip()
 
         df_seller = df_company.loc[df_company['email'].str.contains(email.sender)]
