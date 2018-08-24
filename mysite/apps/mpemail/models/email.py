@@ -306,7 +306,7 @@ class Email(models.Model):
                 '보내는분 성명': seller_dict['거래처명'],
                 '보내는분 전화': str(sender_phone or ""),
                 '보내는분 핸드폰': str(sender_cellphone or ""),
-                '보내는분 우편본호': seller_dict['우편번호'],
+                '보내는분 우편번호': seller_dict['우편번호'],
                 '보내는분 주소': seller_dict['주소'],
 
                 '택배박스 갯수': '',
