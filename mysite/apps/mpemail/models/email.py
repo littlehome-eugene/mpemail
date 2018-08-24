@@ -189,7 +189,7 @@ class Email(models.Model):
         try:
             df = pd.read_excel(attachment.attachment, dtype=str)
         except:
-            email.attachments.delete()
+            email.attachments.all().delete()
             email.save()
             raise ValueError("첨부파일 파싱 오류")
 
