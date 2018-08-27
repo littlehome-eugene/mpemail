@@ -176,6 +176,7 @@ class EmailViewSet(viewsets.ModelViewSet):
         for email in emails:
 
             try:
+
                 if email.attachments.count() == 0:
                     raise ValueError('첨부파일이 없음')
                 for attachment in email.attachments.all():
@@ -282,14 +283,22 @@ class EmailViewSet(viewsets.ModelViewSet):
         path = os.path.join(settings.OUTPUT_DIR, time.strftime("%Y/%m/%d"))
         os.makedirs(path, exist_ok=True)
 
+        filename = 'logistics-{}-{}.xlsx'.format(
+            time.strftime("%Y%m%d"),
+            time.strftime('%H%M%S'))
+
         os.rename(
             os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
-            os.path.join(path, 'logistics.xlsx')
+            os.path.join(path, filename)
         )
+
+        filename = 'order-{}-{}.xlsx'.format(
+            time.strftime("%Y%m%d"),
+            time.strftime('%H%M%S'))
 
         os.rename(
             os.path.join(settings.OUTPUT_DIR, 'order.xlsx'),
-            os.path.join(path, 'order.xlsx')
+            os.path.join(path, filename)
         )
 
         return Response(result)

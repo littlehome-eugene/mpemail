@@ -151,17 +151,21 @@ class Email(models.Model):
             email.auto_order_error = '판매자를 찾을 수 없음'
             return False
 
+        found = False
         for i, title in enumerate(include_titles):
             if email.title.startswith(title):
+                found = True
                 break
-        if i == len(include_titles):
+        if not found:
             email.auto_order_error = '이메일 제목'
             return False
 
+        found = False
         for i, keyword in enumerate(exclude_keywords):
             if keyword in email.body_text or keyword in email.title:
+                found = True
                 break
-        if i == len(exclude_keywords):
+        if found:
             email.auto_order_error = '제외어가 포함되어 있음'
             return False
 
@@ -181,6 +185,7 @@ class Email(models.Model):
     #     return url
 
     def process_attachment(self, attachment):
+
 
         error = None
         email = self
@@ -323,16 +328,16 @@ class Email(models.Model):
 
             for product in products:
                 count_none = False
-                productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', row[product_column])
+                productcode_count_pairs_bogus = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*[^개\d]+)?', product.strip())
                 if productcode_count_pairs_bogus:
                     if productcode_count_pairs_bogus[0][1]:
                         error = '수량 파싱 실패 {}'.format(index)
                         raise ValueError(error)
 
-                productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', row[product_column])
+                productcode_count_pairs = re.findall('[^[]+\[([^]]+)\][^\d[]*(?:(\d)\s*개)?', product.strip())
                 if len(productcode_count_pairs) == 1:
 
-                    product_code = productcode_count_pairs[0][0]
+                    product_code = productcode_count_pairs[0][0].strip()
                     count = productcode_count_pairs[0][1] or None
                     if count is None:
                         count_none = True
@@ -340,6 +345,7 @@ class Email(models.Model):
                     count = int(count)
                     count_sum += count
                 else:
+
                     error = '품목코드 파싱 실패 {}'.format(index)
                     raise ValueError(error)
 
@@ -361,6 +367,11 @@ class Email(models.Model):
                 order_dict['품목_flat'] = product_name
 
                 order_dict.setdefault('수량', [])
+
+                if count_none:
+                    if count_by_countcolumn:
+                        count = count_by_countcolumn
+
                 order_dict['수량'].append(count)
                 order_dict['수량_flat'] = count
 
@@ -441,12 +452,15 @@ class Email(models.Model):
         for index, row in df_delivery.iterrows():
             if row_prev is not None:
                 cols_compare = ['고객성명', '주소', '전화번호', '핸드폰번호']
+                same = True
                 for i, col_name in enumerate(cols_compare):
                     if row[col_name] != row_prev[col_name]:
+                        same = False
                         break
-                if i != len(cols_compare):
+                if not same:
                     continue
 
+                import pdb; pdb.set_trace()
                 df_delivery.loc[index_prev, '품목'].extend(
                      df_delivery.loc[index, '품목']
                 )
