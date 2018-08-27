@@ -460,7 +460,6 @@ class Email(models.Model):
                 if not same:
                     continue
 
-                import pdb; pdb.set_trace()
                 df_delivery.loc[index_prev, '품목'].extend(
                      df_delivery.loc[index, '품목']
                 )
