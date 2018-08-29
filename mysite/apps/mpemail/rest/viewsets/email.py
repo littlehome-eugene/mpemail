@@ -199,8 +199,8 @@ class EmailViewSet(viewsets.ModelViewSet):
                     attachment.order_data_path = path
                     attachment.save()
 
-                    df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0)
-                    df_order = pd.concat([df_order, df_order_1], axis=0)
+                    df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0, ignore_index=True)
+                    df_order = pd.concat([df_order, df_order_1], axis=0, ignore_index=True)
 
             except ValueError as e:
 
@@ -215,13 +215,22 @@ class EmailViewSet(viewsets.ModelViewSet):
                 }
                 continue
 
+
         if not df_delivery.empty:
-            writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'))
-            df_delivery = df_delivery.fillna('')
-            df_delivery.to_excel(
+            path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
+            writer = ExcelWriter(path)
+
+            df_delivery.fillna('', inplace=True)
+            df_delivery.replace('nan', '', inplace=True)
+
+            df_delivery_style = df_delivery.style.apply(row_style, axis=1)
+
+            df_delivery_style.to_excel(
                 writer,
+                # writer,
                 columns=columns_delivery,
                 index=False,
+                # engine='openpyxl',
             )
             writer.save()
 
@@ -232,7 +241,8 @@ class EmailViewSet(viewsets.ModelViewSet):
             )
 
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
-            df_order = df_order.fillna('')
+            df_order.fillna('', inplace=True)
+            df_order.replace('nan', '', inplace=True)
             df_order.to_excel(
                 writer,
                 columns=columns_order,
@@ -276,10 +286,6 @@ class EmailViewSet(viewsets.ModelViewSet):
             auto_order_status='process_success'
         )
 
-        emails.update(auto_order_status='complete')
-
-        emails = Email.objects.filter(msg_mid__in=mids)
-        result = emails.status()
 
         path = os.path.join(settings.OUTPUT_DIR, time.strftime("%Y/%m/%d"))
         os.makedirs(path, exist_ok=True)
@@ -287,20 +293,29 @@ class EmailViewSet(viewsets.ModelViewSet):
         filename = 'logistics-{}-{}.xlsx'.format(
             time.strftime("%Y%m%d"),
             time.strftime('%H%M%S'))
+        emails = Email.objects.filter(msg_mid__in=mids)
 
-        os.rename(
-            os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
-            os.path.join(path, filename)
-        )
+        try:
+            os.rename(
+                os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
+                os.path.join(path, filename)
+            )
 
-        filename = 'order-{}-{}.xlsx'.format(
-            time.strftime("%Y%m%d"),
-            time.strftime('%H%M%S'))
+            filename = 'order-{}-{}.xlsx'.format(
+                time.strftime("%Y%m%d"),
+                time.strftime('%H%M%S'))
 
-        os.rename(
-            os.path.join(settings.OUTPUT_DIR, 'order.xlsx'),
-            os.path.join(path, filename)
-        )
+            os.rename(
+                os.path.join(settings.OUTPUT_DIR, 'order.xlsx'),
+                os.path.join(path, filename)
+            )
+
+            emails.update(auto_order_status='complete')
+
+        except:
+            emails.update(auto_order_status='process_fail')
+            pass
+        result = emails.status()
 
         return Response(result)
 
@@ -473,3 +488,11 @@ class EmailViewSet(viewsets.ModelViewSet):
         result = emails.status()
 
         return Response(result)
+
+def row_style(row):
+    if row['yellow']:
+
+        return pd.Series('background-color: yellow', row.index)
+        # return ['background-color: yellow'] * row.size
+
+    return pd.Series('', row.index)

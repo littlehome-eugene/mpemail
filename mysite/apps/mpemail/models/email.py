@@ -186,13 +186,13 @@ class Email(models.Model):
 
     def process_attachment(self, attachment):
 
-
         error = None
         email = self
         process_order_fail_reason = None
 
         try:
             df = pd.read_excel(attachment.attachment, dtype=str)
+            df.replace('nan', '', inplace=True)
         except:
             email.attachments.all().delete()
             email.save()
@@ -238,29 +238,29 @@ class Email(models.Model):
         order_list = []
         for column in df.columns:
             column_w = xstr(column)
-            if column_w in product.tolist():
+            if column_w in [xstr(a) for a in product.dropna().tolist()]:
                 product_column = column
-            elif column_w in count.tolist():
+            elif column_w in [xstr(a) for a in count.dropna().tolist()]:
                 count_column = column
-            elif column_w in customer.tolist():
+            elif column_w in [xstr(a) for a in customer.dropna().tolist()]:
                 customer_column = column
-            elif column_w in postal.tolist():
+            elif column_w in [xstr(a) for a in postal.dropna().tolist()]:
                 postal_column = column
-            elif column_w in address.tolist():
+            elif column_w in [xstr(a) for a in address.dropna().tolist()]:
                 address_column = column
-            elif column_w in address_detail.tolist():
+            elif column_w in [xstr(a) for a in address_detail.dropna().tolist()]:
                 address_detail_column = column
-            elif column_w in phone.tolist():
+            elif column_w in [xstr(a) for a in phone.dropna().tolist()]:
                 phone_column = column
-            elif column_w in message.tolist():
+            elif column_w in [xstr(a) for a in message.dropna().tolist()]:
                 message_column = column
-            elif column_w in sender.tolist():
+            elif column_w in [xstr(a) for a in sender.dropna().tolist()]:
                 sender_column = column
-            elif column_w in sender_phone.tolist():
+            elif column_w in [xstr(a) for a in sender_phone.dropna().tolist()]:
                 sender_phone_column = column
-            elif column_w in sender_cellphone.tolist():
+            elif column_w in [xstr(a) for a in sender_cellphone.dropna().tolist()]:
                 sender_cellphone_column = column
-            elif column_w in cellphone.tolist():
+            elif column_w in [xstr(a) for a in cellphone.dropna().tolist()]:
                 cellphone_column = column
 
         if product_column is None:
@@ -276,6 +276,19 @@ class Email(models.Model):
             raise ValueError(error)
 
         for index, row in df.iterrows():
+
+            if not row[product_column]:
+                raise ValueError('품목 없음')
+            if not row[customer_column]:
+                error = '고객성명 없음'
+                raise ValueError(error)
+            if not row[address_column]:
+                error = '주소 없음'
+                raise ValueError(error)
+            if not row[phone_column]:
+                error = '전화번호 없음'
+                raise ValueError(error)
+
             products = row[product_column].split('//')
             count_by_countcolumn = row.get(count_column) or None
             if count_by_countcolumn is not None:
@@ -297,9 +310,10 @@ class Email(models.Model):
                     if sender != row[customer_column]:
                         customer = '{} ({})'.format(customer, sender)
 
+            print(str(row.get(postal_column) or ""))
             order_dict = {
                 '고객성명': customer,
-                '우편번호': row.get(postal_column),
+                '우편번호': str(row.get(postal_column) or ""),
                 '주소': ' '.join([
                     xstr(row.get(address_column)),
                     xstr(row.get(address_detail_column)),
@@ -316,7 +330,7 @@ class Email(models.Model):
 
                 '택배박스 갯수': '',
                 '운임Type': '',
-                '주문번호': str(uuid.uuid4()),
+                '주문번호': 'o' + str(uuid.uuid4()),
 
             }
 
@@ -377,7 +391,7 @@ class Email(models.Model):
                     raise ValueError("카톤수가 숫자가 아님 {}".format(index))
                 order_dict['카톤'].append(caton)
 
-                order_list.append(order_dict)
+            order_list.append(order_dict)
 
 
             if not count_none and count_by_countcolumn and count_by_countcolumn != count_sum:
@@ -451,27 +465,26 @@ class Email(models.Model):
                     if row[col_name] != row_prev[col_name]:
                         same = False
                         break
-                if not same:
-                    continue
+                if same:
+                    df_delivery.loc[index_prev, '품목'].extend(
+                         df_delivery.loc[index, '품목']
+                    )
+                    df_delivery.loc[index_prev, '품목코드'].extend(
+                         df_delivery.loc[index, '품목코드']
+                    )
+                    df_delivery.loc[index_prev, '수량'].extend(
+                         df_delivery.loc[index, '수량']
+                    )
+                    df_delivery.loc[index_prev, '배송메시지'].extend(
+                         df_delivery.loc[index, '배송메시지']
+                    )
+                    df_delivery.loc[index_prev, '카톤'].extend(
+                         df_delivery.loc[index, '카톤']
+                    )
 
-                df_delivery.loc[index_prev, '품목'].extend(
-                     df_delivery.loc[index, '품목']
-                )
-                df_delivery.loc[index_prev, '수량'].extend(
-                     df_delivery.loc[index, '수량']
-                )
-                df_delivery.loc[index_prev, '배송메시지'].extend(
-                     df_delivery.loc[index, '배송메시지']
-                )
-                df_delivery.loc[index_prev, '카톤'].extend(
-                     df_delivery.loc[index, '카톤']
-                )
-
-                df_delivery.loc[index, 'to_be_deleted'] = True
-            else:
-                address_prev = row['주소']
-                row_prev = row
-                index_prev = index
+                    df_delivery.loc[index, 'to_be_deleted'] = True
+            row_prev = row
+            index_prev = index
 
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 
