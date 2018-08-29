@@ -217,7 +217,7 @@ class EmailViewSet(viewsets.ModelViewSet):
 
         if not df_delivery.empty:
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'))
-
+            df_delivery = df_delivery.fillna('')
             df_delivery.to_excel(
                 writer,
                 columns=columns_delivery,
@@ -232,6 +232,7 @@ class EmailViewSet(viewsets.ModelViewSet):
             )
 
             writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
+            df_order = df_order.fillna('')
             df_order.to_excel(
                 writer,
                 columns=columns_order,

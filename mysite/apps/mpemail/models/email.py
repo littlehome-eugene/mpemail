@@ -286,15 +286,9 @@ class Email(models.Model):
                 sender = row[sender_column]
             else:
                 sender = None
-            if sender_phone_column:
-                sender_phone = row[sender_phone_column]
-            else:
-                sender_phone = seller_dict['전화']
 
-            if sender_cellphone_column:
-                sender_cellphone = row[sender_cellphone_column]
-            else:
-                sender_cellphone = seller_dict['핸드폰']
+            sender_phone = seller_dict['전화']
+            sender_cellphone = seller_dict['핸드폰']
 
 
             customer = row[customer_column]
