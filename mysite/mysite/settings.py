@@ -162,6 +162,7 @@ if DEBUG:
 
 
 OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
+TMP_OUTPUT_DIR = BASE_DIR
 
 
 EMAIL_SENDER = 'test@natureprime.co.kr'

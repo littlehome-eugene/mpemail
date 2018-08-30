@@ -232,21 +232,22 @@ class EmailViewSet(viewsets.ModelViewSet):
             df_delivery_style = df_delivery.style.apply(row_style, axis=1)
 
             try:
+
                 df_delivery_style.to_excel(
-                    writer,
+                    'logistics.xlsx',
                     columns=columns_delivery,
                     index=False,
                     engine='openpyxl',
                 )
-                writer.save()
+                # writer.save()
 
                 # for test
                 df_delivery.to_csv(
-                    os.path.join(settings.OUTPUT_DIR, 'logistics.csv'),
+                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.csv'),
                     columns=columns_delivery
                 )
 
-                writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
+                writer = ExcelWriter(os.path.join(settings.TMP_OUTPUT_DIR, 'order.xlsx'))
                 df_order.fillna('', inplace=True)
                 df_order.replace('nan', '', inplace=True)
                 df_order.to_excel(
@@ -258,7 +259,7 @@ class EmailViewSet(viewsets.ModelViewSet):
 
                 # for test
                 df_order.to_csv(
-                    os.path.join(settings.OUTPUT_DIR, 'order.csv'),
+                    os.path.join(settings.TMP_OUTPUT_DIR, 'order.csv'),
                     columns=columns_order
                 )
             except:
@@ -307,7 +308,7 @@ class EmailViewSet(viewsets.ModelViewSet):
 
         try:
             os.rename(
-                os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
+                os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
                 os.path.join(path, filename)
             )
 
@@ -316,7 +317,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                 time.strftime('%H%M%S'))
 
             os.rename(
-                os.path.join(settings.OUTPUT_DIR, 'order.xlsx'),
+                os.path.join(settings.TMP_OUTPUT_DIR, 'order.xlsx'),
                 os.path.join(path, filename)
             )
 
