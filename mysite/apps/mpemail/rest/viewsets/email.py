@@ -175,6 +175,9 @@ class EmailViewSet(viewsets.ModelViewSet):
 
         for email in emails:
 
+            df_delivery_t = pd.DataFrame(columns=columns_delivery)
+            df_order_t = pd.DataFrame(columns=columns_order)
+
             try:
 
                 if email.attachments.count() == 0:
@@ -199,8 +202,11 @@ class EmailViewSet(viewsets.ModelViewSet):
                     attachment.order_data_path = path
                     attachment.save()
 
-                    df_delivery = pd.concat([df_delivery, df_delivery_1], axis=0, ignore_index=True)
-                    df_order = pd.concat([df_order, df_order_1], axis=0, ignore_index=True)
+                    df_delivery_t = pd.concat([df_delivery_t, df_delivery_1], axis=0, ignore_index=True)
+                    df_order_t = pd.concat([df_order_t, df_order_1], axis=0, ignore_index=True)
+
+                df_delivery = pd.concat([df_delivery, df_delivery_t], axis=0, ignore_index=True)
+                df_order = pd.concat([df_order, df_order_t], axis=0, ignore_index=True)
 
             except ValueError as e:
 
@@ -225,36 +231,40 @@ class EmailViewSet(viewsets.ModelViewSet):
 
             df_delivery_style = df_delivery.style.apply(row_style, axis=1)
 
-            df_delivery_style.to_excel(
-                writer,
-                # writer,
-                columns=columns_delivery,
-                index=False,
-                # engine='openpyxl',
-            )
-            writer.save()
+            try:
+                df_delivery_style.to_excel(
+                    writer,
+                    columns=columns_delivery,
+                    index=False,
+                    engine='openpyxl',
+                )
+                writer.save()
 
-            # for test
-            df_delivery.to_csv(
-                os.path.join(settings.OUTPUT_DIR, 'logistics.csv'),
-                columns=columns_delivery
-            )
+                # for test
+                df_delivery.to_csv(
+                    os.path.join(settings.OUTPUT_DIR, 'logistics.csv'),
+                    columns=columns_delivery
+                )
 
-            writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
-            df_order.fillna('', inplace=True)
-            df_order.replace('nan', '', inplace=True)
-            df_order.to_excel(
-                writer,
-                columns=columns_order,
-                index=False,
-            )
-            writer.save()
+                writer = ExcelWriter(os.path.join(settings.OUTPUT_DIR, 'order.xlsx'))
+                df_order.fillna('', inplace=True)
+                df_order.replace('nan', '', inplace=True)
+                df_order.to_excel(
+                    writer,
+                    columns=columns_order,
+                    index=False,
+                )
+                writer.save()
 
-            # for test
-            df_order.to_csv(
-                os.path.join(settings.OUTPUT_DIR, 'order.csv'),
-                columns=columns_order
-            )
+                # for test
+                df_order.to_csv(
+                    os.path.join(settings.OUTPUT_DIR, 'order.csv'),
+                    columns=columns_order
+                )
+            except:
+                for key, value in result.items():
+                    value['error'] = 'file access denied'
+                    result[key] = value
 
         return Response(result)
 

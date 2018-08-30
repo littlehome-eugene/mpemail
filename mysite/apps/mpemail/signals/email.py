@@ -14,8 +14,8 @@ def fetch_attachments(sender, instance, created,  **kwargs):
     # if not email.check_eligible_for_process():
     #     return
 
-    # if email.attachments.exclude(attachment='').exists():
-    #     return
+    if email.attachments.exclude(attachment='').exists():
+        return
 
     # download_attachment.delay(email.id)
     download_attachment(email.id)

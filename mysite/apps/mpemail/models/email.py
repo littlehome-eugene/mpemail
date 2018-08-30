@@ -310,7 +310,6 @@ class Email(models.Model):
                     if sender != row[customer_column]:
                         customer = '{} ({})'.format(customer, sender)
 
-            print(str(row.get(postal_column) or ""))
             order_dict = {
                 '고객성명': customer,
                 '우편번호': str(row.get(postal_column) or ""),
@@ -319,7 +318,7 @@ class Email(models.Model):
                     xstr(row.get(address_detail_column)),
                 ]),
                 '전화번호': str(row[phone_column] or ""),
-                '배송메시지': list(row.get(message_column) or ''),
+                '배송메세지': [row.get(message_column) or ''],
                 '핸드폰번호': str(row.get(cellphone_column) or ""),
 
                 '보내는분 성명': seller_dict['거래처명'],
@@ -475,8 +474,8 @@ class Email(models.Model):
                     df_delivery.loc[index_prev, '수량'].extend(
                          df_delivery.loc[index, '수량']
                     )
-                    df_delivery.loc[index_prev, '배송메시지'].extend(
-                         df_delivery.loc[index, '배송메시지']
+                    df_delivery.loc[index_prev, '배송메세지'].extend(
+                         df_delivery.loc[index, '배송메세지']
                     )
                     df_delivery.loc[index_prev, '카톤'].extend(
                          df_delivery.loc[index, '카톤']
@@ -513,8 +512,9 @@ class Email(models.Model):
             return ' / '.join(result)
 
         df_delivery['품목'] = df_delivery.apply(compact, axis=1)
-        df_delivery['배송메시지'] = df_delivery.apply(
-            lambda row: ' . '.join(row['배송메시지']), axis=1)
+
+        df_delivery['배송메세지'] = df_delivery.apply(
+            lambda row: ' . '.join(row['배송메세지']), axis=1)
 
         return df_delivery, df_order
 
