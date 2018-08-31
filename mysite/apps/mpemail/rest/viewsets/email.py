@@ -306,6 +306,8 @@ class EmailViewSet(viewsets.ModelViewSet):
             time.strftime('%H%M%S'))
         emails = Email.objects.filter(msg_mid__in=mids)
 
+        file_error = False
+
         try:
             os.rename(
                 os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
@@ -324,9 +326,12 @@ class EmailViewSet(viewsets.ModelViewSet):
             emails.update(auto_order_status='complete')
 
         except:
-            emails.update(auto_order_status='process_fail')
+            file_error = True
             pass
         result = emails.status()
+
+        if file_error:
+            result['error'] = '파일을 옮기는 데 실패하였습니다.'
 
         return Response(result)
 
