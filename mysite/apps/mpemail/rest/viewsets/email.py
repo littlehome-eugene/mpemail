@@ -223,8 +223,8 @@ class EmailViewSet(viewsets.ModelViewSet):
 
 
         if not df_delivery.empty:
-            path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
-            writer = ExcelWriter(path)
+            # path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
+            # writer = ExcelWriter(path)
 
             df_delivery.fillna('', inplace=True)
             df_delivery.replace('nan', '', inplace=True)
