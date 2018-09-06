@@ -234,7 +234,7 @@ class EmailViewSet(viewsets.ModelViewSet):
             try:
 
                 df_delivery_style.to_excel(
-                    'logistics.xlsx',
+                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
                     columns=columns_delivery,
                     index=False,
                     engine='openpyxl',

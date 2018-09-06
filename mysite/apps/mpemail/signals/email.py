@@ -15,7 +15,6 @@ def fetch_attachments(sender, instance, created,  **kwargs):
     #     return
 
     if email.attachments.exclude(attachment='').exists():
-        print('skipping')
         return
 
     # download_attachment.delay(email.id)
