@@ -223,8 +223,8 @@ class EmailViewSet(viewsets.ModelViewSet):
 
 
         if not df_delivery.empty:
-            path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
-            writer = ExcelWriter(path)
+            # path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
+            # writer = ExcelWriter(path)
 
             df_delivery.fillna('', inplace=True)
             df_delivery.replace('nan', '', inplace=True)
@@ -234,13 +234,13 @@ class EmailViewSet(viewsets.ModelViewSet):
             try:
 
                 df_delivery_style.to_excel(
-                    # os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx'),
-                    writer,
+                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
+                    # writer,
                     columns=columns_delivery,
                     index=False,
                     engine='openpyxl',
                 )
-                writer.save()
+                # writer.save()
 
                 # for test
                 df_delivery.to_csv(
