@@ -247,16 +247,16 @@ class EmailViewSet(viewsets.ModelViewSet):
                     columns=columns_order
                 )
 
-                path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
-                # writer = ExcelWriter(path)
+                path = os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx')
+                writer = ExcelWriter(path)
                 df_delivery_style.to_excel(
-                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
+                    # os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
                     writer,
                     columns=columns_delivery,
                     index=False,
                     engine='openpyxl',
                 )
-                # writer.save()
+                writer.save()
 
                 # for test
                 df_delivery.to_csv(
