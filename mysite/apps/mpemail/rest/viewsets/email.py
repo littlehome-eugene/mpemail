@@ -223,8 +223,6 @@ class EmailViewSet(viewsets.ModelViewSet):
 
 
         if not df_delivery.empty:
-            path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
-            writer = ExcelWriter(path)
 
             df_delivery.fillna('', inplace=True)
             df_delivery.replace('nan', '', inplace=True)
@@ -232,21 +230,6 @@ class EmailViewSet(viewsets.ModelViewSet):
             df_delivery_style = df_delivery.style.apply(row_style, axis=1)
 
             try:
-
-                df_delivery_style.to_excel(
-                    # os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
-                    writer,
-                    columns=columns_delivery,
-                    index=False,
-                    engine='openpyxl',
-                )
-                # writer.save()
-
-                # for test
-                df_delivery.to_csv(
-                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.csv'),
-                    columns=columns_delivery
-                )
 
                 writer = ExcelWriter(os.path.join(settings.TMP_OUTPUT_DIR, 'order.xlsx'))
                 df_order.fillna('', inplace=True)
@@ -263,6 +246,24 @@ class EmailViewSet(viewsets.ModelViewSet):
                     os.path.join(settings.TMP_OUTPUT_DIR, 'order.csv'),
                     columns=columns_order
                 )
+
+                path = os.path.join(settings.OUTPUT_DIR, 'logistics.xlsx')
+                writer = ExcelWriter(path)
+                df_delivery_style.to_excel(
+                    # os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.xlsx'),
+                    writer,
+                    columns=columns_delivery,
+                    index=False,
+                    engine='openpyxl',
+                )
+                writer.save()
+
+                # for test
+                df_delivery.to_csv(
+                    os.path.join(settings.TMP_OUTPUT_DIR, 'logistics.csv'),
+                    columns=columns_delivery
+                )
+
             except:
                 for key, value in result.items():
                     value['error'] = 'file access denied'
