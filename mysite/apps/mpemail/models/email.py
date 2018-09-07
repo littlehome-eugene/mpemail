@@ -456,6 +456,7 @@ class Email(models.Model):
         row_prev = None
         index_prev = None
         df_delivery['to_be_deleted'] = False
+        same = True
         for index, row in df_delivery.iterrows():
             if row_prev is not None:
                 cols_compare = ['고객성명', '주소', '전화번호', '핸드폰번호']
@@ -482,8 +483,12 @@ class Email(models.Model):
                     )
 
                     df_delivery.loc[index, 'to_be_deleted'] = True
-            row_prev = row
-            index_prev = index
+                else:
+                    row_prev = row
+                    index_prev = index
+            else:
+                row_prev = row
+                index_prev = index
 
         df_delivery = df_delivery[df_delivery['to_be_deleted'] != True]
 

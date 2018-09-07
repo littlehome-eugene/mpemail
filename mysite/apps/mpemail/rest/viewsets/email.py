@@ -188,7 +188,7 @@ class EmailViewSet(viewsets.ModelViewSet):
                     df_delivery_1, df_order_1 = res
 
                     email.auto_order_status = 'process_success'
-                    email.save()
+
                     result[email.msg_mid] = {
                         'error': None,
                         'auto_order_status': email.auto_order_status,
@@ -264,6 +264,9 @@ class EmailViewSet(viewsets.ModelViewSet):
                     columns=columns_delivery
                 )
 
+                for email in emails:
+                    email.save()
+
             except:
                 for key, value in result.items():
                     value['error'] = 'file access denied'
@@ -306,7 +309,6 @@ class EmailViewSet(viewsets.ModelViewSet):
         filename = 'logistics-{}-{}.xlsx'.format(
             time.strftime("%Y%m%d"),
             time.strftime('%H%M%S'))
-        emails = Email.objects.filter(msg_mid__in=mids)
 
         file_error = False
 
