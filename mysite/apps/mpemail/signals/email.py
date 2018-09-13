@@ -17,6 +17,10 @@ def fetch_attachments(sender, instance, created,  **kwargs):
     if email.attachments.exclude(attachment='').exists():
         return
 
+    if email.excel_attachment_count == 0:
+        return
+
+    print('fetching attachments')
     # download_attachment.delay(email.id)
     download_attachment(email.id)
 
