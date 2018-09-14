@@ -425,11 +425,11 @@ class EmailViewSet(viewsets.ModelViewSet):
         logistics_data = get_logistics_info(start_date, end_date)
         df_logistics = pd.DataFrame(logistics_data)
 
-        from_ = '{} {}'.format(
+        from_ = '{} <{}>'.format(
             settings.EMAIL_SENDER_NAME, settings.EMAIL_SENDER
         )
         cc = ''
-        encryption = ''
+        encryption = 'none'
         bcc = ''
         attach_pgp_pubkey = 'no'
 
@@ -475,8 +475,10 @@ class EmailViewSet(viewsets.ModelViewSet):
                 continue
 
             body = '<!DOCTYPE html><html><head><title></title></head><body>{}</body></html>'.format(email.reply_html)
-            to = email.sender
-            # to = 'p.junks@gmail.com'  # for test
+            to = '{} <{}>'.format(email.sender_name, email.sender)
+            # to = '{} <{}>'.format('abc', 'p.junks@gmail.com')  # for test
+            # body = '<!DOCTYPE html><html><head><title></title></head><body>{}</body></html>'.format('hello')  # for test
+
             subject = 'Re: {}'.format(email.title)
 
             data = {
