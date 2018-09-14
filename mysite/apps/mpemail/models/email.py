@@ -86,6 +86,7 @@ class Email(models.Model):
     ALLOWED_EXCEL_MIME_TYPES = [
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream',
     ]
 
     AUTO_STATUS = [
