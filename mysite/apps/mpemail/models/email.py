@@ -315,8 +315,8 @@ class Email(models.Model):
                 '고객성명': customer,
                 '우편번호': str(row.get(postal_column) or ""),
                 '주소': ' '.join([
-                    str(row.get(address_column)),
-                    str(row.get(address_detail_column)),
+                    str(row.get(address_column, '')),
+                    str(row.get(address_detail_column, '')),
                 ]),
                 '전화번호': str(row[phone_column] or ""),
                 '배송메세지': [row.get(message_column) or ''],
